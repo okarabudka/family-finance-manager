@@ -34,7 +34,7 @@ class AnalyticsService
         }, 3600);
     }
 
-    private function buildMonthlyReport(Family $family, $from, $to): MonthlyReport
+    private function buildMonthlyReport(Family $family, \DateTimeImmutable $from, \DateTimeImmutable $to): MonthlyReport
     {
         $expenses = $this->txRepo->sumByCategory($family, $from, $to);
         $totalExpenses = array_sum(array_column($expenses, 'total'));
@@ -44,6 +44,10 @@ class AnalyticsService
         $categoriesData = [];
         foreach ($expenses as $row) {
             $category = $this->categoryRepo->find($row['categoryId']);
+            // Категория могла быть удалена — пропускаем "осиротевшие" транзакции
+            if ($category === null) {
+                continue;
+            }
             $budget = $this->budgetRepo->findForMonth($family, $category, (int)$from->format('Y'), (int)$from->format('n'));
 
             $categoriesData[] = new CategoryReport(
@@ -111,6 +115,15 @@ class AnalyticsService
      */
     public function getMonthlyTrend(Family $family, int $months = 6): array
     {
+        $cacheKey = "monthly_trend_{$family->getId()}_{$months}";
+
+        return $this->cache->get($cacheKey, function () use ($family, $months) {
+            return $this->buildMonthlyTrend($family, $months);
+        }, 3600);
+    }
+
+    private function buildMonthlyTrend(Family $family, int $months): array
+    {
         $result = [];
         $now = new \DateTimeImmutable();
 
@@ -138,6 +151,9 @@ class AnalyticsService
 }
 ```
 
+> **Примечание**: `getMonthlyTrend` не кэшировался в исходной версии — добавлен TTL 3600 с теми же параметрами, что и у `getMonthlyReport`. Кэш инвалидируется при создании транзакции в `TransactionService`.
+```
+
 ---
 
 ## 6.2 SuggestionService — рекомендации по оптимизации
@@ -150,6 +166,7 @@ class SuggestionService
     public function __construct(
         private readonly AnalyticsService $analyticsService,
         private readonly TransactionRepository $txRepo,
+        private readonly CategoryRepository $categoryRepo,  // был пропущен в оригинале
     ) {}
 
     /**
@@ -246,6 +263,10 @@ class SuggestionService
             $hasThisMonth = $this->txRepo->hasCategoryTransactionThisMonth($family, $categoryId);
             if (!$hasThisMonth) {
                 $category = $this->categoryRepo->find($categoryId);
+                // Категория могла быть удалена — пропускаем
+                if ($category === null) {
+                    continue;
+                }
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::MissingRegularExpense,
                     priority: SuggestionPriority::Medium,
@@ -289,6 +310,29 @@ readonly class CategoryReport
         public float $percent,
         public ?float $budgetAmount,
         public ?float $budgetUsedPercent,
+    ) {}
+}
+
+// src/Domain/Analytics/CategoryComparison.php
+readonly class CategoryComparison
+{
+    public function __construct(
+        public Category $category,
+        public float $currentAmount,
+        public float $previousAmount,
+        public float $diff,
+        public ?float $diffPercent,
+    ) {}
+}
+
+// src/Domain/Analytics/PeriodComparison.php
+readonly class PeriodComparison
+{
+    public function __construct(
+        public MonthlyReport $current,
+        public MonthlyReport $previous,
+        /** @var CategoryComparison[] */
+        public array $categoryComparisons,
     ) {}
 }
 
@@ -360,7 +404,8 @@ enum SuggestionPriority: int {
 <div class="mt-6">
     <h3 class="font-semibold mb-3">💡 Рекомендации</h3>
     {% for suggestion in suggestions %}
-    <div class="bg-{{ suggestion.priority.value >= 3 ? 'red' : 'yellow' }}-50 border border-{{ suggestion.priority.value >= 3 ? 'red' : 'yellow' }}-200 rounded p-3 mb-2">
+    {# SuggestionPriority: Critical=4, High=3, Medium=2, Low=1 #}
+    <div class="bg-{{ suggestion.priority.value >= 4 ? 'red' : (suggestion.priority.value >= 3 ? 'orange' : 'yellow') }}-50 border border-{{ suggestion.priority.value >= 4 ? 'red' : (suggestion.priority.value >= 3 ? 'orange' : 'yellow') }}-200 rounded p-3 mb-2">
         <div class="font-medium">{{ suggestion.title }}</div>
         <div class="text-sm text-gray-600">{{ suggestion.message }}</div>
     </div>
@@ -460,17 +505,29 @@ class ChartGenerator
             ],
         ];
 
-        $response = $this->httpClient->request('GET', 'https://quickchart.io/chart', [
-            'query' => [
-                'c' => json_encode($config),
-                'width' => 600,
-                'height' => 400,
-                'backgroundColor' => 'white',
-            ]
-        ]);
+        $chartsDir = $this->storagePath . '/charts';
+        if (!is_dir($chartsDir)) {
+            mkdir($chartsDir, 0755, true);
+        }
+        $tmpFile = $chartsDir . '/' . uniqid('chart_') . '.png';
 
-        $tmpFile = $this->storagePath . '/charts/' . uniqid('chart_') . '.png';
-        file_put_contents($tmpFile, $response->getContent());
+        try {
+            $response = $this->httpClient->request('GET', 'https://quickchart.io/chart', [
+                'query' => [
+                    'c' => json_encode($config),
+                    'width' => 600,
+                    'height' => 400,
+                    'backgroundColor' => 'white',
+                ]
+            ]);
+            file_put_contents($tmpFile, $response->getContent());
+        } catch (\Exception $e) {
+            // Не оставляем битый файл при ошибке
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+            throw $e;
+        }
 
         return $tmpFile;
     }
@@ -492,12 +549,23 @@ class ChartGenerator
             ],
         ];
 
-        $response = $this->httpClient->request('GET', 'https://quickchart.io/chart', [
-            'query' => ['c' => json_encode($config), 'width' => 700, 'height' => 400, 'backgroundColor' => 'white']
-        ]);
+        $chartsDir = $this->storagePath . '/charts';
+        if (!is_dir($chartsDir)) {
+            mkdir($chartsDir, 0755, true);
+        }
+        $tmpFile = $chartsDir . '/' . uniqid('chart_') . '.png';
 
-        $tmpFile = $this->storagePath . '/charts/' . uniqid('chart_') . '.png';
-        file_put_contents($tmpFile, $response->getContent());
+        try {
+            $response = $this->httpClient->request('GET', 'https://quickchart.io/chart', [
+                'query' => ['c' => json_encode($config), 'width' => 700, 'height' => 400, 'backgroundColor' => 'white']
+            ]);
+            file_put_contents($tmpFile, $response->getContent());
+        } catch (\Exception $e) {
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+            throw $e;
+        }
 
         return $tmpFile;
     }
@@ -521,9 +589,20 @@ class ChartGenerator
 ```php
 class StatsCommandHandler implements CommandHandlerInterface
 {
+    public function __construct(
+        private readonly UserRepository $userRepo,
+        private readonly AnalyticsService $analyticsService,
+        private readonly ChartGenerator $chartGenerator,
+        private readonly TelegramSender $sender,
+    ) {}
+
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            return;
+        }
         $family = $user->getFamily();
         $now = new \DateTimeImmutable();
 
@@ -566,6 +645,14 @@ class StatsCommandHandler implements CommandHandlerInterface
 #[AsCommand(name: 'app:report:weekly')]
 class WeeklyReportCommand extends Command
 {
+    public function __construct(
+        private readonly FamilyRepository $familyRepo,
+        private readonly SuggestionService $suggestionService,
+        private readonly TelegramSender $sender,
+    ) {
+        parent::__construct();
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $families = $this->familyRepo->findAll();

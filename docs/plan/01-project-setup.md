@@ -28,10 +28,10 @@ composer require \
     doctrine/doctrine-migrations-bundle \
     stof/doctrine-extensions-bundle \
     knplabs/knp-paginator-bundle \
-    irazasyed/telegram-bot-sdk \
     codelicious/mt940 \
     league/csv \
-    symfony/webpack-encore-bundle
+    symfony/webpack-encore-bundle \
+    symfony/rate-limiter
 
 # Dev-зависимости
 composer require --dev \
@@ -41,7 +41,11 @@ composer require --dev \
     phpunit/phpunit \
     symfony/phpunit-bridge \
     fakerphp/faker \
-    squizlabs/php_codesniffer
+    squizlabs/php_codesniffer \
+    phpstan/phpstan \
+    phpstan/extension-installer \
+    phpstan/phpstan-symfony \
+    phpstan/phpstan-doctrine
 ```
 
 ---
@@ -289,6 +293,7 @@ doctrine:
 ```yaml
 framework:
     messenger:
+        failure_transport: failed
         transports:
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
@@ -296,10 +301,94 @@ framework:
                     max_retries: 3
                     delay: 1000
                     multiplier: 2
+            failed:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    stream: messages_failed
         routing:
             'App\Message\ProcessImportMessage': async
             'App\Message\SendNotificationMessage': async
             'App\Message\GenerateReportMessage': async
+```
+
+---
+
+## 1.8 Настройка Webpack Encore и Tailwind CSS
+
+```bash
+# Устанавливаем Node-зависимости
+npm install --save-dev @symfony/webpack-encore tailwindcss postcss-loader autoprefixer
+
+# Инициализируем Tailwind
+npx tailwindcss init
+```
+
+Файл `webpack.config.js`:
+```js
+const Encore = require('@symfony/webpack-encore');
+
+Encore
+    .setOutputPath('public/build/')
+    .setPublicPath('/build')
+    .addEntry('app', './assets/app.js')
+    .enablePostCssLoader()
+    .enableSingleRuntimeChunk()
+    .enableSourceMaps(!Encore.isProduction())
+    .enableVersioning(Encore.isProduction());
+
+module.exports = Encore.getWebpackConfig();
+```
+
+Файл `tailwind.config.js`:
+```js
+module.exports = {
+    content: ['./templates/**/*.html.twig', './assets/**/*.js'],
+    theme: { extend: {} },
+    plugins: [],
+};
+```
+
+Файл `assets/app.css`:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+Файл `assets/app.js`:
+```js
+import './app.css';
+import Chart from 'chart.js/auto';
+window.Chart = Chart;
+```
+
+В Makefile добавить:
+```makefile
+assets:
+	docker compose exec app npm run dev
+
+assets-watch:
+	docker compose exec app npm run watch
+```
+
+---
+
+## 1.9 Настройка PHPStan
+
+Файл `phpstan.neon`:
+```neon
+parameters:
+    level: 6
+    paths:
+        - src
+    symfony:
+        container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
+```
+
+В Makefile добавить:
+```makefile
+analyse:
+	docker compose exec app vendor/bin/phpstan analyse
 ```
 
 ---

@@ -5,7 +5,81 @@
 
 ---
 
-## 4.1 Архитектура бота
+## 4.1 Интерфейсы бота
+
+```php
+// src/Telegram/ConversationInterface.php
+interface ConversationInterface
+{
+    public function handle(int $chatId, array $update, array $state): void;
+}
+
+// src/Telegram/CommandHandlerInterface.php
+interface CommandHandlerInterface
+{
+    public function handle(int $chatId, array $update): void;
+}
+```
+
+---
+
+## 4.1.1 CommandRegistry и ConversationRegistry
+
+```php
+// src/Telegram/CommandRegistry.php
+
+class CommandRegistry
+{
+    /** @param array<string, CommandHandlerInterface> $handlers */
+    public function __construct(private readonly array $handlers) {}
+
+    public function execute(string $command, array $update): void
+    {
+        $chatId = $update['message']['chat']['id'] ?? 0;
+        $handler = $this->handlers[$command] ?? null;
+
+        if (!$handler) {
+            // Неизвестная команда — молча игнорируем или отвечаем /help
+            return;
+        }
+
+        $handler->handle($chatId, $update);
+    }
+}
+
+// Регистрация в config/services.yaml:
+// App\Telegram\CommandRegistry:
+//   arguments:
+//     $handlers:
+//       start:    '@App\Telegram\Handler\StartCommandHandler'
+//       add:      '@App\Telegram\Handler\AddCommandHandler'
+//       income:   '@App\Telegram\Handler\IncomeCommandHandler'
+//       balance:  '@App\Telegram\Handler\BalanceCommandHandler'
+//       report:   '@App\Telegram\Handler\ReportCommandHandler'
+//       import:   '@App\Telegram\Handler\ImportCommandHandler'
+//       pending:  '@App\Telegram\Handler\PendingCommandHandler'
+//       help:     '@App\Telegram\Handler\HelpCommandHandler'
+```
+
+```php
+// src/Telegram/Conversation/ConversationRegistry.php
+
+class ConversationRegistry
+{
+    /** @param array<string, ConversationInterface> $conversations */
+    public function __construct(private readonly array $conversations) {}
+
+    public function get(string $class): ConversationInterface
+    {
+        return $this->conversations[$class]
+            ?? throw new \RuntimeException("Conversation not registered: $class");
+    }
+}
+```
+
+---
+
+## 4.2 Архитектура бота
 
 ```
 Telegram → HTTPS Webhook → TelegramWebhookController
@@ -73,6 +147,7 @@ class UpdateDispatcher
         private readonly ConversationManager $conversationManager,
         private readonly MessageHandler $messageHandler,
         private readonly CallbackHandler $callbackHandler,
+        private readonly TelegramSender $sender,  // нужен для answerCallbackQuery
     ) {}
 
     public function dispatch(array $update): void
@@ -81,6 +156,8 @@ class UpdateDispatcher
 
         if (isset($update['callback_query'])) {
             $this->callbackHandler->handle($update['callback_query']);
+            // Обязательно отвечаем на callback — иначе у пользователя будет крутиться «загрузка» на кнопке
+            $this->sender->answerCallbackQuery($update['callback_query']['id']);
             return;
         }
 
@@ -96,6 +173,14 @@ class UpdateDispatcher
         if (str_starts_with($text, '/')) {
             $command = explode(' ', ltrim($text, '/'))[0];
             $command = explode('@', $command)[0]; // убираем @botname
+
+            // /cancel завершает любой активный диалог
+            if ($command === 'cancel') {
+                $this->conversationManager->end($chatId);
+                $this->sender->sendMessage($chatId, '❌ Действие отменено.');
+                return;
+            }
+
             $this->commandRegistry->execute($command, $update);
             return;
         }
@@ -220,6 +305,11 @@ class AddExpenseConversation implements ConversationInterface
 
         // Показываем кнопки с категориями
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            $this->conversationManager->end($chatId);
+            return;
+        }
         $categories = $this->categoryRepo->findByFamily($user->getFamily(), CategoryType::Expense);
 
         $keyboard = $this->buildCategoryKeyboard($categories);
@@ -240,6 +330,11 @@ class AddExpenseConversation implements ConversationInterface
 
         // Показываем кнопки со счетами
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            $this->conversationManager->end($chatId);
+            return;
+        }
         $accounts = $this->accountRepo->findActiveByFamily($user->getFamily());
 
         $keyboard = $this->buildAccountKeyboard($accounts);
@@ -249,28 +344,68 @@ class AddExpenseConversation implements ConversationInterface
     private function handleAccount(int $chatId, ?string $callbackData, array $state): void
     {
         if (!$callbackData || !str_starts_with($callbackData, 'account:')) {
+            $this->sender->sendMessage($chatId, '❌ Выберите счёт из списка.');
             return;
         }
 
         $accountId = substr($callbackData, 8);
         $state['data']['accountId'] = $accountId;
+        $state['step'] = 4;
+        $this->conversationManager->updateState($chatId, $state);
 
-        // Если счёт один или выбран — создаём транзакцию
+        $this->sender->sendMessage(
+            $chatId,
+            "📅 Укажите дату (дд.мм.гггг) или отправьте «сегодня»:"
+        );
+    }
+
+    private function handleDate(int $chatId, string $text, array $state): void
+    {
+        if (mb_strtolower(trim($text)) === 'сегодня' || trim($text) === '') {
+            $date = new \DateTimeImmutable();
+        } else {
+            $date = \DateTimeImmutable::createFromFormat('d.m.Y', trim($text));
+            if (!$date) {
+                $this->sender->sendMessage($chatId, '❌ Неверный формат. Введите дату как 25.03.2025 или «сегодня»:');
+                return;
+            }
+        }
+
+        $state['data']['date'] = $date->format('Y-m-d');
+        $this->conversationManager->updateState($chatId, $state);
+
         $this->createTransaction($chatId, $state);
     }
 
     private function createTransaction(int $chatId, array $state): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            $this->conversationManager->end($chatId);
+            return;
+        }
         $data = $state['data'];
+
+        $date = isset($data['date'])
+            ? new \DateTimeImmutable($data['date'])
+            : new \DateTimeImmutable();
+
+        $account = $this->accountRepo->find($data['accountId']);
+        if (!$account) {
+            $this->sender->sendMessage($chatId, '❌ Счёт не найден. Начните заново: /expense');
+            $this->conversationManager->end($chatId);
+            return;
+        }
 
         $transaction = $this->transactionService->addExpense(
             family: $user->getFamily(),
             user: $user,
-            amount: $data['amount'],
+            amount: (string) $data['amount'],
             category: $this->categoryRepo->find($data['categoryId']),
-            account: $this->accountRepo->find($data['accountId']),
+            account: $account,
             description: $data['description'] ?? '',
+            date: $date,
         );
 
         $this->conversationManager->end($chatId);
@@ -301,6 +436,23 @@ class AddExpenseConversation implements ConversationInterface
 
         return ['inline_keyboard' => $rows];
     }
+
+    private function buildAccountKeyboard(array $accounts): array
+    {
+        $rows = [];
+        foreach (array_chunk($accounts, 2) as $rowAccounts) {
+            $row = [];
+            foreach ($rowAccounts as $account) {
+                $row[] = [
+                    'text' => $account->getName(),
+                    'callback_data' => 'account:' . $account->getId(),
+                ];
+            }
+            $rows[] = $row;
+        }
+
+        return ['inline_keyboard' => $rows];
+    }
 }
 ```
 
@@ -315,6 +467,12 @@ class AddExpenseConversation implements ConversationInterface
 
 class StartCommandHandler implements CommandHandlerInterface
 {
+    public function __construct(
+        private readonly UserRepository $userRepo,
+        private readonly TelegramSender $sender,
+        private readonly ConversationManager $conversationManager,
+    ) {}
+
     public function handle(int $chatId, array $update): void
     {
         $telegramUser = $update['message']['from'];
@@ -334,14 +492,102 @@ class StartCommandHandler implements CommandHandlerInterface
 }
 ```
 
+### RegisterConversation — первичная регистрация
+
+```php
+// src/Telegram/Conversation/RegisterConversation.php
+
+class RegisterConversation implements ConversationInterface
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ConversationManager $conversationManager,
+        private readonly TelegramSender $sender,
+    ) {}
+
+    public function handle(int $chatId, array $update, array $state): void
+    {
+        $step = $state['step'] ?? 0;
+        $text = $update['message']['text'] ?? '';
+
+        match($step) {
+            0 => $this->askName($chatId, $state),
+            1 => $this->handleName($chatId, $text, $state),
+        };
+    }
+
+    private function askName(int $chatId, array $state): void
+    {
+        $this->sender->sendMessage($chatId, '👋 Добро пожаловать! Как вас зовут?');
+        $state['step'] = 1;
+        $this->conversationManager->updateState($chatId, $state);
+    }
+
+    private function handleName(int $chatId, string $text, array $state): void
+    {
+        $name = trim($text);
+        if (mb_strlen($name) < 2) {
+            $this->sender->sendMessage($chatId, '❌ Имя слишком короткое. Попробуйте ещё раз:');
+            return;
+        }
+
+        $telegramUser = $state['data']['telegramUser'];
+
+        // Создаём семью и пользователя
+        $family = new Family();
+        $family->setName("{$name}'s Family")->setCurrency('EUR');
+        $this->em->persist($family);
+
+        $user = new User();
+        $user->setName($name)
+             ->setEmail("telegram_{$telegramUser['id']}@local")
+             ->setTelegramChatId($chatId)
+             ->setTelegramUsername($telegramUser['username'] ?? null)
+             ->setFamily($family)
+             ->setRoles(['ROLE_USER'])
+             ->setCreatedAt(new \DateTimeImmutable());
+
+        // Создаём счета по умолчанию
+        $bank = (new Account())->setName('Основной счёт')->setType(AccountType::Checking)->setFamily($family)->setIsDefault(true);
+        $cash = (new Account())->setName('Наличные')->setType(AccountType::Cash)->setFamily($family);
+
+        $this->em->persist($user);
+        $this->em->persist($bank);
+        $this->em->persist($cash);
+        $this->em->flush();
+
+        $this->conversationManager->end($chatId);
+
+        $this->sender->sendMessage(
+            $chatId,
+            "✅ Готово, {$name}! Аккаунт создан.\n\n"
+            . "Созданы счета:\n🏦 Основной счёт\n💵 Наличные\n\n"
+            . "Попробуйте добавить первый расход:\n`50 продукты`",
+            parseMode: 'Markdown'
+        );
+    }
+}
+```
+
 ### /balance — текущий баланс
 
 ```php
 class BalanceCommandHandler implements CommandHandlerInterface
 {
+    public function __construct(
+        private readonly UserRepository $userRepo,
+        private readonly AccountRepository $accountRepo,
+        private readonly AccountService $accountService,
+        private readonly TelegramSender $sender,
+    ) {}
+
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            return;
+        }
         $family = $user->getFamily();
         $accounts = $this->accountRepo->findActiveByFamily($family);
 
@@ -355,8 +601,8 @@ class BalanceCommandHandler implements CommandHandlerInterface
                 AccountType::Cash       => '💵',
                 AccountType::CreditCard => '💳',
             };
-            $sign = $balance >= 0 ? '' : '';
-            $text .= "{$icon} *{$account->getName()}*: {$sign}{$balance} {$account->getCurrency()}\n";
+            // $balance уже отрицателен если долг — знак выводится автоматически
+            $text .= "{$icon} *{$account->getName()}*: {$balance} {$account->getCurrency()}\n";
         }
 
         $totals = $this->accountService->getTotalBalance($family);
@@ -375,24 +621,35 @@ class BalanceCommandHandler implements CommandHandlerInterface
 ```php
 class ReportCommandHandler implements CommandHandlerInterface
 {
+    public function __construct(
+        private readonly UserRepository $userRepo,
+        private readonly AnalyticsService $analyticsService,
+        private readonly TelegramSender $sender,
+    ) {}
+
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
+        if (!$user || !$user->getFamily()) {
+            $this->sender->sendMessage($chatId, '❌ Сначала зарегистрируйтесь: /start');
+            return;
+        }
         $now = new \DateTimeImmutable();
         $from = $now->modify('first day of this month')->setTime(0, 0);
         $to = $now->modify('last day of this month')->setTime(23, 59, 59);
 
+        // getMonthlyReport() возвращает MonthlyReport (объект, не массив)
         $report = $this->analyticsService->getMonthlyReport($user->getFamily(), $from, $to);
 
         $text = "📊 *Отчёт за " . $now->format('F Y') . "*\n\n";
-        $text .= "📥 Доходы: *{$report['income']} €*\n";
-        $text .= "📤 Расходы: *{$report['expenses']} €*\n";
-        $text .= "💾 Баланс: *{$report['balance']} €*\n\n";
+        $text .= "📥 Доходы: *{$report->totalIncome} €*\n";
+        $text .= "📤 Расходы: *{$report->totalExpenses} €*\n";
+        $text .= "💾 Баланс: *{$report->balance} €*\n\n";
         $text .= "📂 *По категориям:*\n";
 
-        foreach ($report['byCategory'] as $item) {
-            $pct = round($item['percent']);
-            $text .= "• {$item['category']}: {$item['amount']} € ({$pct}%)\n";
+        foreach ($report->byCategory as $item) {
+            $pct = round($item->percent);
+            $text .= "• {$item->category->getName()}: {$item->amount} € ({$pct}%)\n";
         }
 
         $keyboard = [
@@ -416,13 +673,22 @@ class ReportCommandHandler implements CommandHandlerInterface
 
 class MessageHandler
 {
+    public function __construct(
+        private readonly UserRepository $userRepo,
+        private readonly QuickInputParser $quickInputParser,
+        private readonly CategoryRuleService $categoryRuleService,
+        private readonly AccountRepository $accountRepo,
+        private readonly TransactionService $transactionService,
+        private readonly TelegramSender $sender,
+    ) {}
+
     public function handle(array $update): void
     {
         $chatId = $update['message']['chat']['id'];
         $text = $update['message']['text'] ?? '';
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if (!$user) {
+        if (!$user || !$user->getFamily()) {
             $this->sender->sendMessage($chatId, 'Сначала зарегистрируйтесь: /start');
             return;
         }
@@ -446,6 +712,10 @@ class MessageHandler
 
         // Берём счёт по умолчанию
         $account = $this->accountRepo->findDefaultForFamily($user->getFamily());
+        if (!$account) {
+            $this->sender->sendMessage($chatId, '❌ Установите счёт по умолчанию в веб-интерфейсе перед быстрым вводом.');
+            return;
+        }
 
         $transaction = $this->transactionService->addExpense(
             family: $user->getFamily(),
@@ -506,7 +776,8 @@ class TelegramSender
             $params['parse_mode'] = $parseMode;
         }
         if ($replyMarkup) {
-            $params['reply_markup'] = json_encode($replyMarkup);
+            // НЕ json_encode — при использовании ['json' => $params] Symfony сам сериализует массив
+            $params['reply_markup'] = $replyMarkup;
         }
 
         try {
@@ -560,7 +831,8 @@ class TelegramSender
 class TelegramSetWebhookCommand extends Command
 {
     public function __construct(
-        private readonly TelegramSender $sender,
+        private readonly HttpClientInterface $httpClient,  // не TelegramSender — он не умеет setWebhook
+        private readonly string $botToken,
         private readonly string $webhookUrl,
         private readonly string $webhookSecret,
     ) {

@@ -94,10 +94,10 @@ class Family
     #[ORM\Column(length: 3)]
     private string $currency = 'EUR';  // ISO 4217
 
-    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'family')]
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'family', cascade: ['remove'])]
     private Collection $members;
 
-    #[ORM\OneToMany(targetEntity: Account::class, mappedBy: 'family')]
+    #[ORM\OneToMany(targetEntity: Account::class, mappedBy: 'family', cascade: ['remove'])]
     private Collection $accounts;
 }
 ```
@@ -145,7 +145,7 @@ class Account
     #[ORM\Column(default: true)]
     private bool $isActive = true;
 
-    #[ORM\Column(default: false)]
+    #[ORM\Column(default: true)]
     private bool $includeInTotal = true;  // включать в общий баланс
 
     #[ORM\ManyToOne(targetEntity: Family::class, inversedBy: 'accounts')]
@@ -153,6 +153,10 @@ class Account
 
     #[ORM\Column(type: 'smallint', default: 0)]
     private int $sortOrder = 0;
+
+    // Счёт по умолчанию при быстром вводе
+    #[ORM\Column(default: false)]
+    private bool $isDefault = false;
 }
 ```
 
@@ -194,7 +198,7 @@ class Category
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     private ?Category $parent = null;
 
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent', cascade: ['remove'])]
     private Collection $children;
 
     #[ORM\ManyToOne(targetEntity: Family::class)]
@@ -217,9 +221,11 @@ class Category
 
 enum TransactionType: string
 {
-    case Expense  = 'expense';
-    case Income   = 'income';
-    case Transfer = 'transfer';  // перевод между счетами
+    case Expense    = 'expense';
+    case Income     = 'income';
+    case Transfer   = 'transfer';   // перевод между своими счетами
+    case Refund     = 'refund';     // возврат средств
+    case Adjustment = 'adjustment'; // корректировка баланса
 }
 
 #[ORM\Entity]
@@ -273,8 +279,16 @@ class Transaction
     #[ORM\OneToOne(targetEntity: ImportTransaction::class)]
     private ?ImportTransaction $importOrigin = null;
 
-    // Теги через простой массив строк
-    #[ORM\Column(type: 'simple_array', nullable: true)]
+    // Признак внутреннего перевода (не влияет на расходы/доходы в аналитике)
+    #[ORM\Column(default: false)]
+    private bool $isInternalTransfer = false;
+
+    // Подтверждена ли транзакция пользователем (неподтверждённые не идут в аналитику)
+    #[ORM\Column(default: true)]
+    private bool $isConfirmed = true;
+
+    // Теги (json, а не simple_array — чтобы поддерживать теги с запятой)
+    #[ORM\Column(type: 'json', nullable: true)]
     private ?array $tags = null;
 }
 ```
@@ -375,18 +389,115 @@ class ImportTransaction
     #[ORM\ManyToOne(targetEntity: Category::class)]
     private ?Category $suggestedCategory = null;
 
+    // Уверенность автоматической категоризации (0.0 – 1.0)
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $confidenceScore = null;
+
     #[ORM\Column(enumType: ImportTransactionStatus::class)]
     private ImportTransactionStatus $status = ImportTransactionStatus::Pending;
 
     // Хэш для определения дубликатов
-    #[ORM\Column(length: 64)]
+    #[ORM\Column(length: 64, unique: true)]
     private string $deduplicationHash;
 }
 ```
 
 ---
 
-## 2.8 Сущность Budget (бюджет по категориям)
+## 2.8 Сущность SavingsGoal (копилка / накопительная цель)
+
+```php
+// src/Entity/SavingsGoal.php
+
+enum SavingsGoalStatus: string
+{
+    case Active    = 'active';
+    case Completed = 'completed';
+    case Archived  = 'archived';
+}
+
+#[ORM\Entity]
+#[ORM\Table(name: 'savings_goals')]
+class SavingsGoal
+{
+    #[ORM\Id, ORM\Column(type: UuidType::NAME)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    private Uuid $id;
+
+    #[ORM\ManyToOne(targetEntity: Family::class)]
+    private Family $family;
+
+    // Счёт-копилка, куда идут переводы
+    #[ORM\ManyToOne(targetEntity: Account::class)]
+    private Account $account;
+
+    #[ORM\Column(length: 100)]
+    private string $name;              // "Отпуск 2025", "Подушка безопасности"
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $description = null;
+
+    // Целевая сумма (null = без цели)
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $targetAmount = null;
+
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $targetDate = null;
+
+    #[ORM\Column(enumType: SavingsGoalStatus::class)]
+    private SavingsGoalStatus $status = SavingsGoalStatus::Active;
+
+    #[ORM\Column]
+    private \DateTimeImmutable $createdAt;
+}
+```
+
+---
+
+## 2.9 Сущность Recommendation (сохранённые рекомендации)
+
+```php
+// src/Entity/Recommendation.php
+#[ORM\Entity]
+#[ORM\Table(name: 'recommendations')]
+class Recommendation
+{
+    #[ORM\Id, ORM\Column(type: UuidType::NAME)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    private Uuid $id;
+
+    #[ORM\ManyToOne(targetEntity: Family::class)]
+    private Family $family;
+
+    #[ORM\Column(length: 50)]
+    private string $type;           // 'expense_spike', 'budget_exceeded', etc.
+
+    #[ORM\Column(type: 'smallint')]
+    private int $priority;          // 1=low, 2=medium, 3=high, 4=critical
+
+    #[ORM\Column(length: 200)]
+    private string $title;
+
+    #[ORM\Column(type: 'text')]
+    private string $message;
+
+    // Период расчёта
+    #[ORM\Column(length: 7)]
+    private string $period;         // '2025-03' (год-месяц)
+
+    #[ORM\Column(default: false)]
+    private bool $seenByUser = false;
+
+    #[ORM\Column]
+    private \DateTimeImmutable $generatedAt;
+}
+```
+
+---
+
+## 2.10 Сущность Budget (бюджет по категориям)
 
 ```php
 // src/Entity/Budget.php
@@ -416,7 +527,7 @@ class Budget
 
 ---
 
-## 2.9 Сущность CategoryRule (правила автокатегоризации)
+## 2.11 Сущность CategoryRule (правила автокатегоризации)
 
 ```php
 // src/Entity/CategoryRule.php
@@ -432,8 +543,8 @@ class CategoryRule
     #[ORM\ManyToOne(targetEntity: Category::class)]
     private Category $category;
 
-    // Ключевые слова для поиска в описании транзакции
-    #[ORM\Column(type: 'simple_array')]
+    // Ключевые слова для поиска в описании транзакции (json, не simple_array — допускаем запятые)
+    #[ORM\Column(type: 'json')]
     private array $keywords = [];
 
     // Опционально: IBAN контрагента
@@ -447,7 +558,7 @@ class CategoryRule
 
 ---
 
-## 2.10 Создание миграций
+## 2.12 Создание миграций
 
 ```bash
 # Создать первую миграцию
@@ -462,7 +573,7 @@ php bin/console doctrine:schema:validate
 
 ---
 
-## 2.11 Фикстуры для разработки
+## 2.13 Фикстуры для разработки
 
 ```php
 // src/DataFixtures/AppFixtures.php

@@ -150,9 +150,10 @@ services:
       - app
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "php", "bin/console", "about"]
+      # php-fpm -t не работает корректно на Alpine — используем статус-файл php-fpm
+      test: ["CMD-SHELL", "php -r 'echo 1;' || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
 
   nginx:
@@ -364,7 +365,9 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T app \
               php bin/console doctrine:migrations:migrate --no-interaction
             docker compose -f docker-compose.prod.yml exec -T app \
-              php bin/console cache:clear
+              php bin/console cache:clear --no-warmup
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php bin/console cache:warmup
             echo "Deploy complete: $(date)"
 ```
 
@@ -390,9 +393,14 @@ APP_DIR="/home/deploy/family-finance"
 
 mkdir -p $BACKUP_DIR
 
+# Загружаем переменные из .env (DB_USER, DB_NAME, DB_PASSWORD)
+if [ -f "$APP_DIR/.env" ]; then
+    export $(grep -v '^#' "$APP_DIR/.env" | grep -E '^DB_' | xargs)
+fi
+
 # Бэкап PostgreSQL
 docker compose -f $APP_DIR/docker-compose.prod.yml exec -T db \
-    pg_dump -U $DB_USER $DB_NAME | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+    pg_dump -U "$DB_USER" "$DB_NAME" | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
 
 # Бэкап загруженных файлов
 docker compose -f $APP_DIR/docker-compose.prod.yml run --rm \

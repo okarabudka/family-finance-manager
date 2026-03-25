@@ -18,12 +18,24 @@ class TransactionService
         private readonly EntityManagerInterface $em,
         private readonly AccountService $accountService,
         private readonly CategoryRuleService $categoryRuleService,
+        private readonly CacheInterface $cache,
     ) {}
+
+    /**
+     * Инвалидирует кэш месячных отчётов для семьи за указанный месяц.
+     * Вызывается после любого изменения транзакций.
+     */
+    private function invalidateAnalyticsCache(Family $family, \DateTimeImmutable $date): void
+    {
+        $this->cache->delete("monthly_report_{$family->getId()}_{$date->format('Y-m')}");
+        $this->cache->delete("monthly_trend_{$family->getId()}_6");
+        $this->cache->delete("monthly_trend_{$family->getId()}_12");
+    }
 
     public function addExpense(
         Family $family,
         User $user,
-        float $amount,
+        string $amount,   // строка, а не float — чтобы не терять точность
         ?Category $category,
         Account $account,
         string $description = '',
@@ -45,13 +57,16 @@ class TransactionService
         $this->em->persist($transaction);
         $this->em->flush();
 
+        $this->accountService->invalidateCache($account);
+        $this->invalidateAnalyticsCache($family, $transaction->getExecutedAt());
+
         return $transaction;
     }
 
     public function addIncome(
         Family $family,
         User $user,
-        float $amount,
+        string $amount,
         ?Category $category,
         Account $account,
         string $description = '',
@@ -73,13 +88,16 @@ class TransactionService
         $this->em->persist($transaction);
         $this->em->flush();
 
+        $this->accountService->invalidateCache($account);
+        $this->invalidateAnalyticsCache($family, $transaction->getExecutedAt());
+
         return $transaction;
     }
 
     public function addTransfer(
         Family $family,
         User $user,
-        float $amount,
+        string $amount,
         Account $from,
         Account $to,
         string $description = '',
@@ -100,6 +118,10 @@ class TransactionService
 
         $this->em->persist($transaction);
         $this->em->flush();
+
+        $this->accountService->invalidateCache($from);
+        $this->accountService->invalidateCache($to);
+        $this->invalidateAnalyticsCache($family, $transaction->getExecutedAt());
 
         return $transaction;
     }
@@ -126,6 +148,15 @@ class TransactionService
         }
 
         $this->em->flush();
+
+        // Инвалидируем кэш для всех затронутых счетов и аналитики
+        if ($transaction->getSourceAccount()) {
+            $this->accountService->invalidateCache($transaction->getSourceAccount());
+        }
+        if ($transaction->getTargetAccount()) {
+            $this->accountService->invalidateCache($transaction->getTargetAccount());
+        }
+        $this->invalidateAnalyticsCache($transaction->getFamily(), $transaction->getExecutedAt());
 
         return $transaction;
     }
@@ -260,6 +291,8 @@ class TransactionRepository extends ServiceEntityRepository
             ->where('t.family = :family')
             ->andWhere('t.executedAt BETWEEN :from AND :to')
             ->andWhere('t.type = :type')
+            ->andWhere('t.isConfirmed = true')   // не учитываем неподтверждённые
+            ->andWhere('t.isInternalTransfer = false')  // переводы не считаем расходом
             ->setParameter('family', $family)
             ->setParameter('from', $from)
             ->setParameter('to', $to)
@@ -278,6 +311,221 @@ class TransactionRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Используется в AnalyticsService для подсчёта суммарного дохода/расхода за период.
+     */
+    public function sumByType(
+        Family $family,
+        \DateTimeImmutable $from,
+        \DateTimeImmutable $to,
+        TransactionType $type,
+    ): float {
+        $result = $this->createQueryBuilder('t')
+            ->select('SUM(t.amount)')
+            ->where('t.family = :family')
+            ->andWhere('t.executedAt BETWEEN :from AND :to')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.isConfirmed = true')
+            ->setParameter('family', $family)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->setParameter('type', $type)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    /**
+     * Возвращает ID категорий, по которым были регулярные транзакции (минимум N месяцев из последних X).
+     * Используется в SuggestionService для обнаружения «пропущенных» регулярных расходов.
+     */
+    public function findRegularCategories(Family $family, int $months = 3): array
+    {
+        $from = new \DateTimeImmutable("-{$months} months");
+
+        $rows = $this->createQueryBuilder('t')
+            ->select('IDENTITY(t.category) as categoryId, COUNT(DISTINCT SUBSTRING(t.executedAt, 1, 7)) as monthCount')
+            ->where('t.family = :family')
+            ->andWhere('t.executedAt >= :from')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.category IS NOT NULL')
+            ->setParameter('family', $family)
+            ->setParameter('from', $from)
+            ->setParameter('type', TransactionType::Expense)
+            ->groupBy('t.category')
+            ->having('monthCount >= :months')
+            ->setParameter('months', $months)
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_column($rows, 'categoryId');
+    }
+
+    /**
+     * Проверяет, есть ли в текущем месяце хотя бы одна транзакция по категории.
+     */
+    public function hasCategoryTransactionThisMonth(Family $family, string $categoryId): bool
+    {
+        $now = new \DateTimeImmutable();
+        $from = new \DateTimeImmutable($now->format('Y-m-01'));
+        $to   = new \DateTimeImmutable($now->format('Y-m-t') . ' 23:59:59');
+
+        $count = $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.family = :family')
+            ->andWhere('t.executedAt BETWEEN :from AND :to')
+            ->andWhere('IDENTITY(t.category) = :categoryId')
+            ->setParameter('family', $family)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->setParameter('categoryId', $categoryId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
+    /**
+     * Используется в TransactionController для фильтруемого списка транзакций.
+     */
+    public function createListQuery(Family $family, array $filters): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.family = :family')
+            ->setParameter('family', $family)
+            ->orderBy('t.executedAt', 'DESC');
+
+        if (!empty($filters['type'])) {
+            $qb->andWhere('t.type = :type')
+               ->setParameter('type', TransactionType::from($filters['type']));
+        }
+        if (!empty($filters['category'])) {
+            $qb->andWhere('IDENTITY(t.category) = :category')
+               ->setParameter('category', $filters['category']);
+        }
+        if (!empty($filters['from'])) {
+            $qb->andWhere('t.executedAt >= :from')
+               ->setParameter('from', new \DateTimeImmutable($filters['from']));
+        }
+        if (!empty($filters['to'])) {
+            $qb->andWhere('t.executedAt <= :to')
+               ->setParameter('to', new \DateTimeImmutable($filters['to']));
+        }
+
+        return $qb;
+    }
+}
+```
+
+---
+
+## 3.3.1 AccountRepository — вспомогательные методы
+
+```php
+// src/Repository/AccountRepository.php
+
+class AccountRepository extends ServiceEntityRepository
+{
+    public function findActiveByFamily(Family $family): array
+    {
+        return $this->createQueryBuilder('a')
+            ->where('a.family = :family')
+            ->andWhere('a.isActive = true')
+            ->setParameter('family', $family)
+            ->orderBy('a.sortOrder', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findDefaultForFamily(Family $family): ?Account
+    {
+        return $this->findOneBy(['family' => $family, 'isDefault' => true]);
+    }
+
+    public function createFamilyQueryBuilder(Family $family): QueryBuilder
+    {
+        return $this->createQueryBuilder('a')
+            ->where('a.family = :family')
+            ->andWhere('a.isActive = true')
+            ->setParameter('family', $family)
+            ->orderBy('a.sortOrder', 'ASC');
+    }
+}
+```
+
+---
+
+## 3.3.2 CategoryRepository — вспомогательные методы
+
+```php
+// src/Repository/CategoryRepository.php
+
+class CategoryRepository extends ServiceEntityRepository
+{
+    public function findByFamily(Family $family, CategoryType $type): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.family = :family')
+            ->andWhere('c.type = :type')
+            ->setParameter('family', $family)
+            ->setParameter('type', $type)
+            ->orderBy('c.sortOrder', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function createFamilyQueryBuilder(Family $family): QueryBuilder
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.family = :family')
+            ->setParameter('family', $family)
+            ->orderBy('c.sortOrder', 'ASC');
+    }
+}
+```
+
+---
+
+## 3.3.3 UserRepository — вспомогательные методы
+
+```php
+// src/Repository/UserRepository.php
+
+class UserRepository extends ServiceEntityRepository implements UserLoaderInterface
+{
+    public function findByTelegramChatId(int $chatId): ?User
+    {
+        return $this->findOneBy(['telegramChatId' => $chatId]);
+    }
+
+    public function loadUserByIdentifier(string $identifier): UserInterface
+    {
+        return $this->findOneBy(['email' => $identifier])
+            ?? throw new UserNotFoundException("User not found: $identifier");
+    }
+}
+```
+
+---
+
+## 3.3.4 BudgetRepository
+
+```php
+// src/Repository/BudgetRepository.php
+
+class BudgetRepository extends ServiceEntityRepository
+{
+    public function findForMonth(Family $family, Category $category, int $year, int $month): ?Budget
+    {
+        return $this->findOneBy([
+            'family'   => $family,
+            'category' => $category,
+            'year'     => $year,
+            'month'    => $month,
+        ]);
     }
 }
 ```
@@ -303,7 +551,8 @@ class CategoryRuleService
         string $description,
         ?string $counterpartyIban = null,
     ): ?Category {
-        $rules = $this->ruleRepo->findByFamily($family);
+        // Загружаем правила, отсортированные по приоритету (DESC) — иначе порядок произвольный
+        $rules = $this->ruleRepo->findByFamilyOrderedByPriority($family);
 
         // Сначала проверяем правила с IBAN (более специфичные)
         foreach ($rules as $rule) {
@@ -365,6 +614,11 @@ class QuickInputParser
 
         $rawAmount = str_replace(',', '.', $matches[1]);
         $amount = (float) $rawAmount;
+
+        if ($amount <= 0 && !str_starts_with($matches[1], '-')) {
+            return null;  // нулевая или некорректная сумма без знака
+        }
+
         $description = trim($matches[2]);
 
         // Определяем тип по знаку
@@ -375,7 +629,7 @@ class QuickInputParser
         };
 
         return new QuickInputResult(
-            amount: abs($amount),
+            amount: (string) abs($amount),   // строка для точности
             description: $description,
             type: $type,
         );
@@ -385,7 +639,7 @@ class QuickInputParser
 readonly class QuickInputResult
 {
     public function __construct(
-        public float $amount,
+        public string $amount,   // строка, не float — передаётся напрямую в TransactionService
         public string $description,
         public TransactionType $type,
     ) {}
@@ -423,7 +677,7 @@ class TransactionController extends AbstractController
         Request $request,
         TransactionService $transactionService,
     ): Response {
-        $form = $this->createForm(TransactionType::class);
+        $form = $this->createForm(TransactionFormType::class);  // НЕ TransactionType — это Enum
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -466,7 +720,7 @@ class TransactionFormType extends AbstractType
                 'label' => 'Тип',
             ])
             ->add('amount', MoneyType::class, [
-                'currency' => 'EUR',
+                'currency' => $options['family']->getCurrency(),  // не хардкодим EUR
                 'label' => 'Сумма',
             ])
             ->add('description', TextareaType::class, [
@@ -487,6 +741,12 @@ class TransactionFormType extends AbstractType
                 'label' => 'Дата',
                 'data' => new \DateTime(),
             ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setRequired('family');
+        $resolver->setAllowedTypes('family', Family::class);
     }
 }
 ```

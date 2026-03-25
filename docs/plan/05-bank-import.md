@@ -43,7 +43,153 @@ ImportProcessor:
 
 ---
 
-## 5.3 ImportProcessor — основной сервис
+## 5.3 ImportParserInterface
+
+```php
+// src/Domain/Import/Parser/ImportParserInterface.php
+
+interface ImportParserInterface
+{
+    /**
+     * Парсит файл выписки и возвращает массив сырых транзакций.
+     * Каждый элемент: ['date', 'amount', 'description', 'counterpartyName', 'counterpartyIban']
+     *
+     * @return array<int, array{date: string, amount: float, description: string, counterpartyName: ?string, counterpartyIban: ?string}>
+     */
+    public function parse(string $filePath): array;
+
+    public function supports(string $format): bool;
+}
+```
+
+---
+
+## 5.4 ImportParserFactory
+
+```php
+// src/Domain/Import/ImportParserFactory.php
+
+class ImportParserFactory
+{
+    /** @param iterable<ImportParserInterface> $parsers */
+    public function __construct(private readonly iterable $parsers) {}
+
+    public function getParser(string $format): ImportParserInterface
+    {
+        foreach ($this->parsers as $parser) {
+            if ($parser->supports($format)) {
+                return $parser;
+            }
+        }
+        throw new UnsupportedFormatException("Нет парсера для формата: {$format}");
+    }
+}
+
+// Регистрация в services.yaml:
+// App\Domain\Import\ImportParserFactory:
+//   arguments:
+//     $parsers: !tagged_iterator app.import_parser
+//
+// App\Domain\Import\Parser\Mt940Parser:
+//   tags: ['app.import_parser']
+// App\Domain\Import\Parser\SparkasseCsvParser:
+//   tags: ['app.import_parser']
+```
+
+---
+
+## 5.4.1 TelegramFileDownloader
+
+```php
+// src/Telegram/TelegramFileDownloader.php
+
+class TelegramFileDownloader
+{
+    private const API_BASE = 'https://api.telegram.org/bot';
+
+    public function __construct(
+        private readonly HttpClientInterface $httpClient,
+        private readonly string $botToken,
+        private readonly string $storagePath,
+    ) {}
+
+    public function download(string $fileId, string $originalName): string
+    {
+        // Получаем путь файла на серверах Telegram
+        $response = $this->httpClient->request(
+            'GET',
+            self::API_BASE . $this->botToken . "/getFile?file_id={$fileId}"
+        );
+        $filePath = $response->toArray()['result']['file_path'];
+
+        // Скачиваем содержимое
+        $content = $this->httpClient->request(
+            'GET',
+            "https://api.telegram.org/file/bot{$this->botToken}/{$filePath}"
+        )->getContent();
+
+        // Сохраняем локально
+        $localPath = $this->storagePath . '/imports/' . uniqid() . '_' . basename($originalName);
+        file_put_contents($localPath, $content);
+
+        return $localPath;
+    }
+}
+```
+
+---
+
+## 5.4.2 ImportTransactionRepository
+
+```php
+// src/Repository/ImportTransactionRepository.php
+
+class ImportTransactionRepository extends ServiceEntityRepository
+{
+    public function hashExists(string $hash): bool
+    {
+        return (int) $this->createQueryBuilder('it')
+            ->select('COUNT(it.id)')
+            ->where('it.deduplicationHash = :hash')
+            ->setParameter('hash', $hash)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
+    }
+
+    public function findFirstPending(Family $family): ?ImportTransaction
+    {
+        return $this->createQueryBuilder('it')
+            ->join('it.importFile', 'f')
+            ->join('f.account', 'a')
+            ->where('a.family = :family')
+            ->andWhere('it.status = :status')
+            ->setParameter('family', $family)
+            ->setParameter('status', ImportTransactionStatus::Pending)
+            ->orderBy('it.date', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function countPending(Family $family): int
+    {
+        return (int) $this->createQueryBuilder('it')
+            ->select('COUNT(it.id)')
+            ->join('it.importFile', 'f')
+            ->join('f.account', 'a')
+            ->where('a.family = :family')
+            ->andWhere('it.status = :status')
+            ->setParameter('family', $family)
+            ->setParameter('status', ImportTransactionStatus::Pending)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+}
+```
+
+---
+
+## 5.5 ImportProcessor — основной сервис
 
 ```php
 // src/Domain/Import/ImportProcessor.php
@@ -84,7 +230,7 @@ class ImportProcessor
 
                 $importTx = new ImportTransaction();
                 $importTx->setImportFile($importFile)
-                         ->setAmount($rawTx['amount'])
+                         ->setAmount((string) $rawTx['amount'])  // парсер возвращает float, entity хранит string
                          ->setDate(new \DateTimeImmutable($rawTx['date']))
                          ->setRawDescription($rawTx['description'] ?? '')
                          ->setCounterpartyName($rawTx['counterpartyName'] ?? null)
@@ -132,7 +278,8 @@ class ImportProcessor
 
     private function calculateHash(array $rawTx, Account $account): string
     {
-        return sha256(implode('|', [
+        // sha256() в PHP не существует — используем hash()
+        return hash('sha256', implode('|', [
             $account->getId(),
             $rawTx['date'],
             $rawTx['amount'],
@@ -143,16 +290,17 @@ class ImportProcessor
 
     private function createTransactionFromImport(ImportTransaction $importTx, ImportFile $importFile): void
     {
-        $amount = (float) $importTx->getAmount();
-        $account = $importFile->getAccount();
-        $family = $account->getFamily();
-        $user = $importFile->getUploadedBy();
+        // amount — строка из БД; addIncome/addExpense принимают string $amount
+        $rawAmount = $importTx->getAmount(); // string
+        $account   = $importFile->getAccount();
+        $family    = $account->getFamily();
+        $user      = $importFile->getUploadedBy();
 
-        if ($amount > 0) {
+        if ((float) $rawAmount > 0) {
             $this->transactionService->addIncome(
                 family: $family,
                 user: $user,
-                amount: $amount,
+                amount: $rawAmount,                          // string ✓
                 category: $importTx->getSuggestedCategory(),
                 account: $account,
                 description: $importTx->getRawDescription(),
@@ -162,7 +310,7 @@ class ImportProcessor
             $this->transactionService->addExpense(
                 family: $family,
                 user: $user,
-                amount: abs($amount),
+                amount: ltrim($rawAmount, '-'),              // string без минуса ✓
                 category: $importTx->getSuggestedCategory(),
                 account: $account,
                 description: $importTx->getRawDescription(),
@@ -175,7 +323,7 @@ class ImportProcessor
 
 ---
 
-## 5.4 Парсер MT940
+## 5.5 Парсер MT940
 
 ```php
 // src/Domain/Import/Parser/Mt940Parser.php
@@ -225,7 +373,7 @@ class Mt940Parser implements ImportParserInterface
 
 ---
 
-## 5.5 Парсер CSV Sparkasse
+## 5.6 Парсер CSV Sparkasse
 
 ```php
 // src/Domain/Import/Parser/SparkasseCsvParser.php
@@ -299,7 +447,7 @@ class SparkasseCsvParser implements ImportParserInterface
 
 ---
 
-## 5.6 Автоопределение формата файла
+## 5.7 Автоопределение формата файла
 
 ```php
 // src/Domain/Import/FormatDetector.php
@@ -335,22 +483,43 @@ class FormatDetector
     private function readFirstLine(string $path): string
     {
         $handle = fopen($path, 'r');
+        if ($handle === false) {
+            throw new \RuntimeException("Не удалось открыть файл: {$path}");
+        }
         $line = fgets($handle);
         fclose($handle);
-        return $line ?: '';
+
+        if (!$line) {
+            return '';
+        }
+
+        // Убираем BOM (UTF-8, UTF-16) и нормализуем кодировку для сравнения
+        $line = ltrim($line, "\xEF\xBB\xBF\xFF\xFE");
+        if (!mb_check_encoding($line, 'UTF-8')) {
+            $line = mb_convert_encoding($line, 'UTF-8', 'Windows-1252');
+        }
+
+        return $line;
     }
 }
 ```
 
 ---
 
-## 5.7 Telegram-диалог импорта
+## 5.8 Telegram-диалог импорта
 
 ```php
 // src/Telegram/Handler/ImportCommandHandler.php
 
 class ImportCommandHandler implements CommandHandlerInterface
 {
+    public function __construct(
+        private readonly TelegramSender $sender,
+        private readonly ConversationManager $conversationManager,
+        private readonly UserRepository $userRepo,
+        private readonly AccountRepository $accountRepo,
+    ) {}
+
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
@@ -381,6 +550,17 @@ class ImportCommandHandler implements CommandHandlerInterface
 
 class ImportConversation implements ConversationInterface
 {
+    public function __construct(
+        private readonly TelegramSender $sender,
+        private readonly ConversationManager $conversationManager,
+        private readonly TelegramFileDownloader $telegramFileDownloader,
+        private readonly FormatDetector $formatDetector,
+        private readonly UserRepository $userRepo,
+        private readonly AccountRepository $accountRepo,
+        private readonly EntityManagerInterface $em,
+        private readonly MessageBusInterface $messageBus,
+    ) {}
+
     public function handle(int $chatId, array $update, array $state): void
     {
         $step = $state['step'] ?? 0;
@@ -389,6 +569,26 @@ class ImportConversation implements ConversationInterface
             0 => $this->handleAccountSelection($chatId, $update, $state),
             1 => $this->handleFileUpload($chatId, $update, $state),
         };
+    }
+
+    private function handleAccountSelection(int $chatId, array $update, array $state): void
+    {
+        $callbackData = $update['callback_query']['data'] ?? null;
+
+        if (!$callbackData || !str_starts_with($callbackData, 'import:account:')) {
+            $this->sender->sendMessage($chatId, '❌ Выберите счёт из предложенных кнопок.');
+            return;
+        }
+
+        $accountId = substr($callbackData, strlen('import:account:'));
+        $state['data']['accountId'] = $accountId;
+        $state['step'] = 1;
+        $this->conversationManager->updateState($chatId, $state);
+
+        $this->sender->sendMessage(
+            $chatId,
+            '📎 Теперь отправьте файл выписки (MT940, .sta или CSV из Sparkasse).'
+        );
     }
 
     private function handleFileUpload(int $chatId, array $update, array $state): void
@@ -411,6 +611,12 @@ class ImportConversation implements ConversationInterface
         // Создаём ImportFile
         $user = $this->userRepo->findByTelegramChatId($chatId);
         $account = $this->accountRepo->find($state['data']['accountId']);
+
+        if (!$user || !$account) {
+            $this->sender->sendMessage($chatId, '❌ Ошибка: счёт не найден. Начните заново: /import');
+            $this->conversationManager->end($chatId);
+            return;
+        }
 
         $importFile = new ImportFile();
         $importFile->setOriginalFilename($fileName)
@@ -437,7 +643,7 @@ class ImportConversation implements ConversationInterface
 
 ---
 
-## 5.8 Подтверждение неразобранных транзакций
+## 5.9 Подтверждение неразобранных транзакций
 
 Когда импорт завершён и есть нераспознанные транзакции, бот отправляет их по одной:
 
@@ -446,6 +652,13 @@ class ImportConversation implements ConversationInterface
 
 class PendingImportHandler
 {
+    public function __construct(
+        private readonly ImportTransactionRepository $importTxRepo,
+        private readonly TelegramSender $sender,
+        private readonly CategoryRepository $categoryRepo,
+        private readonly AccountRepository $accountRepo,
+    ) {}
+
     public function sendNextPending(int $chatId, Family $family): void
     {
         $pending = $this->importTxRepo->findFirstPending($family);
@@ -477,12 +690,28 @@ class PendingImportHandler
 
         $this->sender->sendMessage($chatId, $text, $keyboard, 'Markdown');
     }
+
+    private function buildCategoryKeyboard(array $categories, ImportTransaction $pending): array
+    {
+        $rows = [];
+        foreach (array_chunk($categories, 2) as $pair) {
+            $rows[] = array_map(
+                fn(Category $c) => [
+                    'text'          => $c->getName(),
+                    'callback_data' => "pending:category:{$pending->getId()}:{$c->getId()}",
+                ],
+                $pair
+            );
+        }
+
+        return ['inline_keyboard' => $rows];
+    }
 }
 ```
 
 ---
 
-## 5.9 Message и MessageHandler для очереди
+## 5.10 Message и MessageHandler для очереди
 
 ```php
 // src/Message/ProcessImportMessage.php
