@@ -43,8 +43,12 @@
                         </a>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-indigo-100 text-sm">{{ app.user.name }}</span>
+                <div class="flex items-center gap-2">
+                    <a href="{{ path('settings') }}"
+                       class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700
+                              {{ app.request.attributes.get('_route') starts with 'settings' ? 'bg-indigo-700 text-white' : '' }}">
+                        {{ app.user.name }}
+                    </a>
                     <a href="{{ path('app_logout') }}"
                        class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700">
                         Logout
