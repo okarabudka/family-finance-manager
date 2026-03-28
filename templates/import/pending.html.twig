@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pending Transactions — Family Finance Manager{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center gap-4">
+    <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline text-sm">&larr; Back to imports</a>
+    <h1 class="text-2xl font-bold text-gray-900">Pending Import Transactions</h1>
+</div>
+
+{% if transactions.getTotalItemCount() == 0 %}
+    <div class="bg-white rounded-lg shadow p-12 text-center text-gray-400">
+        No pending transactions.
+        <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline ml-1">Back to imports</a>
+    </div>
+{% else %}
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Counterparty</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Suggested Category</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for tx in transactions %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {{ tx.date|date('Y-m-d') }}
+                </td>
+                <td class="px-4 py-3 text-right font-semibold whitespace-nowrap
+                           {{ tx.amount >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ tx.amount|number_format(2, '.', ',') }}
+                </td>
+                <td class="px-4 py-3 text-gray-700 max-w-xs">
+                    <div class="truncate">{{ tx.rawDescription ?? '—' }}</div>
+                </td>
+                <td class="px-4 py-3 text-gray-500">
+                    {% if tx.counterpartyName %}
+                        <div>{{ tx.counterpartyName }}</div>
+                    {% endif %}
+                    {% if tx.counterpartyIban %}
+                        <div class="text-xs text-gray-400 font-mono">{{ tx.counterpartyIban }}</div>
+                    {% endif %}
+                    {% if not tx.counterpartyName and not tx.counterpartyIban %}
+                        <span class="text-gray-300">—</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-gray-500">
+                    {% if tx.suggestedCategory %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
+                            {{ tx.suggestedCategory.name }}
+                        </span>
+                        {% if tx.confidenceScore %}
+                            <div class="text-xs text-gray-400 mt-0.5">
+                                {{ (tx.confidenceScore * 100)|round }}% confidence
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-gray-300">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Pagination #}
+<div class="mt-4 flex justify-center">
+    {{ knp_pagination_render(transactions) }}
+</div>
+{% endif %}
+{% endblock %}

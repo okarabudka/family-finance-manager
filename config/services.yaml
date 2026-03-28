@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+# See also https://symfony.com/doc/current/service_container/import.html
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    App\Telegram\TelegramSender:
+        arguments:
+            $botToken: '%env(TELEGRAM_BOT_TOKEN)%'
+
+    App\Telegram\TelegramFileDownloader:
+        arguments:
+            $botToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $uploadDir: '%env(resolve:STORAGE_LOCAL_PATH)%'
+
+    App\Domain\Analytics\ChartGenerator:
+        arguments:
+            $storagePath: '%env(resolve:STORAGE_LOCAL_PATH)%'
+
+    App\Command\TelegramSetWebhookCommand:
+        arguments:
+            $botToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $webhookUrl: '%env(TELEGRAM_WEBHOOK_URL)%'
+            $webhookSecret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
+
+    App\Controller\Telegram\WebhookController:
+        arguments:
+            $webhookSecret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
+
+    App\Domain\Import\ImportParserFactory:
+        arguments:
+            $parsers: !tagged_iterator app.import_parser
+
+    App\Domain\Import\Parser\Mt940Parser:
+        tags: ['app.import_parser']
+
+    App\Domain\Import\Parser\SparkasseCsvParser:
+        tags: ['app.import_parser']
+
+    App\Telegram\ConversationManager:
+        lazy: true
+        arguments:
+            $cache: '@cache.app'
+            $cachePool: '@cache.app'
+
+    App\Telegram\CommandRegistry:
+        arguments:
+            $handlers:
+                start:    '@App\Telegram\Handler\StartCommandHandler'
+                balance:  '@App\Telegram\Handler\BalanceCommandHandler'
+                report:   '@App\Telegram\Handler\ReportCommandHandler'
+                add:      '@App\Telegram\Handler\AddCommandHandler'
+                import:   '@App\Telegram\Handler\ImportCommandHandler'
+                stats:    '@App\Telegram\Handler\StatsCommandHandler'
+                income:   '@App\Telegram\Handler\IncomeCommandHandler'
+                transfer: '@App\Telegram\Handler\TransferCommandHandler'
+                budget:   '@App\Telegram\Handler\BudgetCommandHandler'
+                pending:  '@App\Telegram\Handler\PendingCommandHandler'
+                help:     '@App\Telegram\Handler\HelpCommandHandler'
+
+    App\Telegram\ConversationRegistry:
+        arguments:
+            $conversations:
+                App\Telegram\Conversation\RegisterConversation:    '@App\Telegram\Conversation\RegisterConversation'
+                App\Telegram\Conversation\AddExpenseConversation:  '@App\Telegram\Conversation\AddExpenseConversation'
+                App\Telegram\Conversation\ImportConversation:      '@App\Telegram\Conversation\ImportConversation'
+                App\Telegram\Conversation\AddIncomeConversation:   '@App\Telegram\Conversation\AddIncomeConversation'
+                App\Telegram\Conversation\AddTransferConversation: '@App\Telegram\Conversation\AddTransferConversation'

@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, redis, intl, zip
+      - run: composer install --no-interaction
+      - run: php vendor/bin/phpstan analyse --no-progress
+      - run: php bin/phpunit
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and push Docker image
+        run: |
+          docker build -f docker/php/Dockerfile.prod -t ${{ secrets.REGISTRY }}/family-finance:${{ github.sha }} .
+          docker push ${{ secrets.REGISTRY }}/family-finance:${{ github.sha }}
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/family-finance
+            APP_IMAGE=${{ secrets.REGISTRY }}/family-finance:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction
+            docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:warmup

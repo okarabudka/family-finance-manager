@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Family Finance Manager{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="h-full">
+
+<div class="min-h-full">
+    {% if app.user %}
+    {# Top navigation bar #}
+    <nav class="bg-indigo-600 shadow-sm">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <a href="{{ path('dashboard') }}" class="text-white font-bold text-lg">
+                        Family Finance
+                    </a>
+                    <div class="hidden md:flex gap-4">
+                        <a href="{{ path('dashboard') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
+                                  {{ app.request.attributes.get('_route') starts with 'dashboard' ? 'bg-indigo-700 text-white' : '' }}">
+                            Dashboard
+                        </a>
+                        <a href="{{ path('transaction_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
+                                  {{ app.request.attributes.get('_route') starts with 'transaction' ? 'bg-indigo-700 text-white' : '' }}">
+                            Transactions
+                        </a>
+                        <a href="{{ path('account_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
+                                  {{ app.request.attributes.get('_route') starts with 'account' ? 'bg-indigo-700 text-white' : '' }}">
+                            Accounts
+                        </a>
+                        <a href="{{ path('category_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
+                                  {{ app.request.attributes.get('_route') starts with 'category' ? 'bg-indigo-700 text-white' : '' }}">
+                            Categories
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-indigo-100 text-sm">{{ app.user.name }}</span>
+                    <a href="{{ path('app_logout') }}"
+                       class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {# Flash messages #}
+    {% set flashTypes = {'success': 'green', 'error': 'red', 'warning': 'yellow', 'info': 'blue'} %}
+    {% for type, messages in app.flashes %}
+        {% set color = flashTypes[type] ?? 'gray' %}
+        {% for message in messages %}
+        <div class="bg-{{ color }}-50 border border-{{ color }}-200 text-{{ color }}-800 px-4 py-3 mx-auto max-w-7xl mt-4 rounded relative" role="alert">
+            <span class="block sm:inline">{{ message }}</span>
+        </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Main content #}
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+{% block javascripts %}{% endblock %}
+</body>
+</html>

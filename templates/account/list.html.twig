@@ -1,0 +1,70 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accounts — Family Finance Manager{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Accounts</h1>
+    <a href="{{ path('account_new') }}"
+       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+        + New Account
+    </a>
+</div>
+
+{% if accounts is empty %}
+    <div class="bg-white rounded-lg shadow p-12 text-center text-gray-400">
+        No accounts yet.
+        <a href="{{ path('account_new') }}" class="text-indigo-600 hover:underline ml-1">Create your first account</a>
+    </div>
+{% else %}
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Currency</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">In Total</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Default</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for account in accounts %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-900">
+                    {{ account.name }}
+                    {% if account.iban %}
+                        <div class="text-xs text-gray-400 font-normal">{{ account.iban }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-gray-500">{{ account.type.value|replace({'_': ' '})|capitalize }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ account.currency }}</td>
+                <td class="px-4 py-3 text-right font-semibold
+                           {{ balances[account.id|string] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ balances[account.id|string]|number_format(2, '.', ',') }} {{ account.currency }}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    {% if account.includeInTotal %}
+                        <span class="text-green-500">Yes</span>
+                    {% else %}
+                        <span class="text-gray-300">No</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    {% if account.default %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">Default</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <a href="{{ path('account_edit', {id: account.id}) }}"
+                       class="text-indigo-600 hover:underline text-xs">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

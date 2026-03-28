@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Categories — Family Finance Manager{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
+    <a href="{{ path('category_new') }}"
+       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+        + New Category
+    </a>
+</div>
+
+{% macro renderCategories(categories) %}
+    {% for category in categories %}
+        {% if category.parent is null %}
+        <div class="mb-1">
+            <div class="flex items-center gap-2 py-2 px-3 rounded hover:bg-gray-50">
+                {% if category.icon %}
+                    <span class="text-lg">{{ category.icon }}</span>
+                {% endif %}
+                {% if category.color %}
+                    <span class="w-3 h-3 rounded-full inline-block" style="background: {{ category.color }}"></span>
+                {% endif %}
+                <span class="font-medium text-gray-800">{{ category.name }}</span>
+                {% if category.isSystem %}
+                    <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">system</span>
+                {% endif %}
+            </div>
+            {# Children #}
+            {% if category.children is not empty %}
+            <div class="ml-6 border-l border-gray-200 pl-3">
+                {% for child in category.children %}
+                <div class="flex items-center gap-2 py-1.5 px-3 rounded hover:bg-gray-50">
+                    {% if child.icon %}
+                        <span>{{ child.icon }}</span>
+                    {% endif %}
+                    {% if child.color %}
+                        <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: {{ child.color }}"></span>
+                    {% endif %}
+                    <span class="text-gray-700">{{ child.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Expense categories #}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+            <span class="text-red-500 font-semibold text-sm uppercase tracking-wide">Expense</span>
+            <span class="text-gray-400 text-sm">({{ expenseCategories|length }})</span>
+        </div>
+        <div class="p-4">
+            {% if expenseCategories is empty %}
+                <p class="text-gray-400 text-sm text-center py-6">No expense categories yet.</p>
+            {% else %}
+                {{ _self.renderCategories(expenseCategories) }}
+            {% endif %}
+        </div>
+    </div>
+
+    {# Income categories #}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+            <span class="text-green-500 font-semibold text-sm uppercase tracking-wide">Income</span>
+            <span class="text-gray-400 text-sm">({{ incomeCategories|length }})</span>
+        </div>
+        <div class="p-4">
+            {% if incomeCategories is empty %}
+                <p class="text-gray-400 text-sm text-center py-6">No income categories yet.</p>
+            {% else %}
+                {{ _self.renderCategories(incomeCategories) }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
 # Шаг 7 — Развёртывание на Hetzner
 
+> **Статус: ✅ РЕАЛИЗОВАНО**
+
 ## Цель
 Развернуть приложение на VPS Hetzner с Docker Compose, настроить Nginx + Let's Encrypt SSL и CI/CD через GitHub Actions.
 
