@@ -9,7 +9,7 @@ use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Repository\AccountRepository::class)]
 #[ORM\Table(name: 'accounts')]
 class Account
 {
@@ -49,6 +49,11 @@ class Account
 
     #[ORM\Column(options: ['default' => false])]
     private bool $isDefault = false;
+
+    public function __toString(): string
+    {
+        return $this->name;
+    }
 
     public function getId(): Uuid
     {

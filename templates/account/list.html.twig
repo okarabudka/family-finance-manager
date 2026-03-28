@@ -42,8 +42,8 @@
                 <td class="px-4 py-3 text-gray-500">{{ account.type.value|replace({'_': ' '})|capitalize }}</td>
                 <td class="px-4 py-3 text-gray-500">{{ account.currency }}</td>
                 <td class="px-4 py-3 text-right font-semibold
-                           {{ balances[account.id|string] >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                    {{ balances[account.id|string]|number_format(2, '.', ',') }} {{ account.currency }}
+                           {{ balances[account.id ~ ''] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ balances[account.id ~ '']|number_format(2, '.', ',') }} {{ account.currency }}
                 </td>
                 <td class="px-4 py-3 text-center">
                     {% if account.includeInTotal %}

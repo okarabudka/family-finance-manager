@@ -9,7 +9,7 @@ use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Repository\SavingsGoalRepository::class)]
 #[ORM\Table(name: 'savings_goals')]
 class SavingsGoal
 {

@@ -9,7 +9,7 @@ use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Repository\BudgetRepository::class)]
 #[ORM\Table(name: 'budgets')]
 #[ORM\UniqueConstraint(columns: ['family_id', 'category_id', 'year', 'month'])]
 class Budget

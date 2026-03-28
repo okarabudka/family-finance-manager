@@ -11,7 +11,7 @@ use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \App\Repository\FamilyRepository::class)]
 #[ORM\Table(name: 'families')]
 class Family
 {
@@ -39,6 +39,11 @@ class Family
     {
         $this->members  = new ArrayCollection();
         $this->accounts = new ArrayCollection();
+    }
+
+    public function __toString(): string
+    {
+        return $this->name;
     }
 
     public function getId(): Uuid

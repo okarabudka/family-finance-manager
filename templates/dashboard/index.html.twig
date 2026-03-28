@@ -25,8 +25,8 @@
             <span class="text-sm font-medium text-gray-500">{{ account.name }}</span>
             <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ account.type.value }}</span>
         </div>
-        <div class="text-2xl font-bold {{ balances[account.id|string] >= 0 ? 'text-green-600' : 'text-red-600' }}">
-            {{ balances[account.id|string]|number_format(2, '.', ',') }} {{ account.currency }}
+        <div class="text-2xl font-bold {{ balances[account.id ~ ''] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+            {{ balances[account.id ~ '']|number_format(2, '.', ',') }} {{ account.currency }}
         </div>
         <div class="mt-2">
             <a href="{{ path('account_edit', {id: account.id}) }}" class="text-xs text-indigo-500 hover:underline">Edit</a>

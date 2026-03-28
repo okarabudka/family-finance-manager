@@ -1,0 +1,43 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content %}
+<div class="row g-4 mt-1">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 text-primary mb-2"><i class="fa fa-users"></i></div>
+                <h5 class="card-title">Users &amp; Families</h5>
+                <p class="card-text text-muted small">Manage user accounts, roles and family groups.</p>
+                <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController') }}"
+                   class="btn btn-primary btn-sm">Users</a>
+                <a href="{{ ea_url().setController('App\\Controller\\Admin\\FamilyCrudController') }}"
+                   class="btn btn-outline-primary btn-sm ms-1">Families</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 text-success mb-2"><i class="fa fa-exchange-alt"></i></div>
+                <h5 class="card-title">Finance</h5>
+                <p class="card-text text-muted small">Browse transactions, accounts, categories and budgets.</p>
+                <a href="{{ ea_url().setController('App\\Controller\\Admin\\TransactionCrudController') }}"
+                   class="btn btn-success btn-sm">Transactions</a>
+                <a href="{{ ea_url().setController('App\\Controller\\Admin\\AccountCrudController') }}"
+                   class="btn btn-outline-success btn-sm ms-1">Accounts</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 text-warning mb-2"><i class="fa fa-file-import"></i></div>
+                <h5 class="card-title">Imports</h5>
+                <p class="card-text text-muted small">View imported files and their processing status.</p>
+                <a href="{{ ea_url().setController('App\\Controller\\Admin\\ImportFileCrudController') }}"
+                   class="btn btn-warning btn-sm">Import Files</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

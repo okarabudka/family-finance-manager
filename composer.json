@@ -10,6 +10,7 @@
         "doctrine/doctrine-bundle": "^2.13",
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^3.6",
+        "easycorp/easyadmin-bundle": "^5.0",
         "knplabs/knp-paginator-bundle": "^6.10",
         "league/csv": "^9.28",
         "phpdocumentor/reflection-docblock": "^6.0",

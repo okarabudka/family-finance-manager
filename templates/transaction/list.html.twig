@@ -139,7 +139,7 @@
     <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
         <div class="text-sm text-gray-500">
             Showing {{ transactions.currentPageNumber * transactions.itemNumberPerPage - transactions.itemNumberPerPage + 1 }}
-            –{{ [transactions.currentPageNumber * transactions.itemNumberPerPage, transactions.totalItemCount]|min }}
+            –{{ min(transactions.currentPageNumber * transactions.itemNumberPerPage, transactions.totalItemCount) }}
             of {{ transactions.totalItemCount }} transactions
         </div>
         <div class="flex gap-1">
