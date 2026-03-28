@@ -8,6 +8,9 @@ services:
       - /var/www/html/vendor
     environment:
       - APP_ENV=dev
+      - DATABASE_URL=postgresql://app:secret@db:5432/family_finance?serverVersion=16&charset=utf8
+      - MESSENGER_TRANSPORT_DSN=redis://redis:6379/messages
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - db
       - redis
@@ -55,6 +58,11 @@ services:
     command: php bin/console messenger:consume async --time-limit=3600
     volumes:
       - .:/var/www/html
+    environment:
+      - APP_ENV=dev
+      - DATABASE_URL=postgresql://app:secret@db:5432/family_finance?serverVersion=16&charset=utf8
+      - MESSENGER_TRANSPORT_DSN=redis://redis:6379/messages
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - db
       - redis
