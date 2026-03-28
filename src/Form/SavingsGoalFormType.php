@@ -43,7 +43,7 @@ class SavingsGoalFormType extends AbstractType
                 'choice_label'  => 'name',
             ])
             ->add('targetAmount', MoneyType::class, [
-                'currency' => 'EUR',
+                'currency' => $family->getCurrency(),
                 'label'    => 'Target Amount',
                 'required' => false,
             ])

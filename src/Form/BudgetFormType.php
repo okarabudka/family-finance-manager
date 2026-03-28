@@ -29,7 +29,7 @@ class BudgetFormType extends AbstractType
                 'choice_label'  => 'name',
             ])
             ->add('plannedAmount', MoneyType::class, [
-                'currency' => 'EUR',
+                'currency' => $family->getCurrency(),
                 'label'    => 'Planned Amount',
             ])
             ->add('year', TextType::class, [

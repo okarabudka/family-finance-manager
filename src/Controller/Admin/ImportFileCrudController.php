@@ -35,12 +35,12 @@ class ImportFileCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->hideOnForm();
-        yield AssociationField::new('family');
+        yield AssociationField::new('account');
         yield TextField::new('originalFilename');
         yield TextField::new('format');
         yield TextField::new('status');
         yield IntegerField::new('totalRows');
-        yield IntegerField::new('processedRows');
+        yield IntegerField::new('importedRows');
         yield TextField::new('errorMessage')->hideOnIndex();
         yield DateTimeField::new('createdAt')->hideOnForm();
     }
