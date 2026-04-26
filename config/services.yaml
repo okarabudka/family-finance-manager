@@ -55,6 +55,10 @@ services:
     App\Domain\Import\Parser\SparkasseCsvParser:
         tags: ['app.import_parser']
 
+    App\MessageHandler\SendReminderMessageHandler:
+        arguments:
+            $mailerFrom: '%env(MAILER_FROM)%'
+
     App\Telegram\ConversationManager:
         lazy: true
         arguments:

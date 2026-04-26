@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Family;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,6 +22,12 @@ class UserRepository extends ServiceEntityRepository implements UserProviderInte
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
+    }
+
+    /** @return User[] */
+    public function findByFamily(Family $family): array
+    {
+        return $this->findBy(['family' => $family]);
     }
 
     public function findByTelegramChatId(int $chatId): ?User

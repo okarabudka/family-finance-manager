@@ -9,6 +9,7 @@ use App\Entity\Budget;
 use App\Entity\Category;
 use App\Entity\Family;
 use App\Entity\ImportFile;
+use App\Entity\ReminderTemplate;
 use App\Entity\SavingsGoal;
 use App\Entity\Transaction;
 use App\Entity\User;
@@ -51,5 +52,8 @@ class AdminDashboardController extends AbstractDashboardController
 
         yield MenuItem::section('Import');
         yield MenuItem::linkToCrud('Import Files', 'fa fa-file-import', ImportFile::class);
+
+        yield MenuItem::section('Notifications');
+        yield MenuItem::linkToCrud('Reminders', 'fa fa-bell', ReminderTemplate::class);
     }
 }
