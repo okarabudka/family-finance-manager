@@ -1,20 +1,25 @@
 # Family Finance Manager
 
-A self-hosted family finance tracker with a Telegram bot as the primary interface and a web dashboard for detailed management. Built with PHP 8.3 / Symfony 7, PostgreSQL 16, and Redis 7. Background processing (bank statement imports, async notifications) runs via Symfony Messenger with a dedicated worker container.
+A self-hosted family finance tracker with a Telegram bot as the primary interface and a web dashboard for detailed management. Built with PHP 8.3 / Symfony 7.4, PostgreSQL 16, and Redis 7. Background processing (bank imports, async notifications, scheduled reminders) runs via Symfony Messenger with a dedicated worker container.
 
 ---
 
 ## Features
 
-- **Telegram bot** — add expenses and income on the go, check balances, and view monthly reports without opening a browser
-- **Quick text input** — type `50 coffee` in the chat to record an expense in seconds
-- **Multi-step interactive dialogs** — guided flows for adding transactions, transfers, and imports via inline keyboard buttons
-- **Web dashboard** — full management of transactions, accounts, categories, budgets, and savings goals
-- **Bank statement import** — parse MT940 (`.sta`) and Sparkasse CSV (`.csv`) files; processed in the background with SHA-256 deduplication to prevent double-imports
-- **Pending categorization** — unrecognized imported transactions are queued for manual review via `/pending`
-- **Budgets and savings goals** — track spending limits per category and progress toward savings targets
-- **Analytics and charts** — monthly reports with category breakdown; charts rendered via Quickchart.io for inline Telegram delivery
-- **Family accounts** — multiple family members share one space with separate personal accounts (checking, savings, cash, credit card)
+- **Telegram bot** — add expenses and income on the go, check balances, view monthly reports, and submit meter readings without opening a browser
+- **Quick text input** — type `50 coffee` in the chat to record an expense instantly
+- **Multi-step interactive dialogs** — guided flows for transactions, transfers, imports, and meter readings via inline keyboard buttons
+- **Web dashboard** — full management of transactions, accounts, categories, budgets, savings goals, and recommendations
+- **Meter readings** — submit electricity (kWh) and water (m³) readings via Telegram with optional photo; view consumption history and bar charts in the web dashboard
+- **Scheduled reminders** — configure recurring notifications (daily / weekly / monthly) per family in the admin panel; delivered via Telegram and/or email
+- **Bank statement import** — parse MT940 (`.sta`) and Sparkasse CSV files; processed in background with SHA-256 deduplication
+- **Pending categorization** — unrecognized imported transactions queue for manual review via `/pending`
+- **Budgets** — track spending limits per category with monthly planning
+- **Savings goals** — track progress toward savings targets with status tracking
+- **Recommendations** — automated financial suggestions visible in the web dashboard
+- **Analytics and charts** — monthly reports with category breakdown; charts via Quickchart.io for Telegram and Chart.js for the web
+- **Family accounts** — multiple members share one family space with separate accounts (checking, savings, cash, credit card)
+- **Admin panel** — EasyAdmin 5 CRUD for all entities at `/admin`
 
 ---
 
@@ -38,15 +43,14 @@ A self-hosted family finance tracker with a Telegram bot as the primary interfac
 ## Quick Start (Docker)
 
 ```bash
-git clone https://github.com/your-org/family-finance-manager.git
+git clone https://github.com/akrbdk/family-finance-manager.git
 cd family-finance-manager
 
 # Copy and edit environment variables
 cp .env .env.local
-# Open .env.local and set at minimum:
-#   TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET
+# Set at minimum: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET
 
-# Start all services: app (PHP-FPM), nginx, db (PostgreSQL), redis, worker
+# Start all services (app, nginx, db, redis, worker)
 docker compose up -d
 
 # Install PHP dependencies
@@ -55,125 +59,187 @@ docker compose exec app composer install
 # Run database migrations
 docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
 
-# (Optional) Load sample/test data
+# (Optional) Load sample data
 docker compose exec app php bin/console doctrine:fixtures:load --no-interaction
 ```
 
-The web interface is now available at **http://localhost:8080**.
+Web interface: **http://localhost:8080**
 
 ---
 
 ## Telegram Bot Setup
 
-The Telegram bot is the primary user interface of the application. Follow these steps carefully.
-
 ### Step 1 — Create a bot via BotFather
 
-1. Open Telegram and start a chat with **@BotFather**
-2. Send `/newbot` and follow the prompts to choose a name and username
-3. Copy the **bot token** BotFather provides (format: `123456789:AAF...`)
+1. Open Telegram, start a chat with **@BotFather**
+2. Send `/newbot` and follow the prompts
+3. Copy the bot token (format: `123456789:AAF...`)
 
 ### Step 2 — Configure environment variables
 
-Edit your `.env.local` file:
-
 ```dotenv
 TELEGRAM_BOT_TOKEN=123456789:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# The public HTTPS URL Telegram will POST updates to
 TELEGRAM_WEBHOOK_URL=https://yourdomain.com/telegram/webhook
-
-# A random secret used to verify that requests genuinely come from Telegram
 TELEGRAM_WEBHOOK_SECRET=your_random_secret_here
 ```
 
-Generate a secure secret with:
+Generate a secure secret:
 
 ```bash
 openssl rand -hex 32
 ```
 
-### Step 3 — Expose your server to Telegram (HTTPS required)
+### Step 3 — Expose your server (HTTPS required)
 
-Telegram only delivers webhook updates to publicly accessible HTTPS endpoints.
+Telegram only posts to public HTTPS endpoints.
 
-**Production:** set `TELEGRAM_WEBHOOK_URL` to your real domain, e.g. `https://finance.example.com/telegram/webhook`.
+**Production:** set `TELEGRAM_WEBHOOK_URL` to your real domain.
 
 **Local development with ngrok:**
 
 ```bash
-# Install ngrok from https://ngrok.com, then:
 ngrok http 8080
+# Copy the https:// URL, append /telegram/webhook, set as TELEGRAM_WEBHOOK_URL
 ```
 
-Copy the `https://` URL that ngrok prints (e.g. `https://abc123.ngrok.io`), append `/telegram/webhook`, and set the full URL as `TELEGRAM_WEBHOOK_URL` in `.env.local`. Then continue to Step 4 — you will need to re-run `set-webhook` every time ngrok gives you a new URL.
+Re-run `set-webhook` every time ngrok gives a new URL.
 
-### Step 4 — Register the webhook with Telegram
+### Step 4 — Register the webhook
 
 ```bash
 docker compose exec app php bin/console app:telegram:set-webhook
-# OR using Make:
-make set-webhook
-```
-
-Expected output:
-
-```
-Webhook registered: https://yourdomain.com/telegram/webhook
+# or: make set-webhook
 ```
 
 ### Step 5 — Test the bot
 
-Send `/start` to your bot in Telegram. It will ask for your name and automatically create a family account with two default accounts (main checking and cash).
+Send `/start` to your bot. It will ask for your name and create a family with two default accounts.
 
 ### Webhook security
 
-Every incoming webhook request is validated against `TELEGRAM_WEBHOOK_SECRET` via the `X-Telegram-Bot-Api-Secret-Token` header. Requests with a missing or incorrect secret are rejected with HTTP 403 before any business logic runs.
+Every request is validated against `TELEGRAM_WEBHOOK_SECRET` via the `X-Telegram-Bot-Api-Secret-Token` header. Requests with wrong or missing secret are rejected with HTTP 403.
 
 ---
 
-## Available Bot Commands
+## Bot Commands
 
 | Command | Description |
 |---|---|
-| `/start` | Register a new account or return to the main menu |
-| `/add` | Add an expense (guided multi-step dialog) |
-| `/income` | Add income (guided multi-step dialog) |
-| `/transfer` | Transfer funds between accounts (guided dialog) |
+| `/start` | Register or return to main menu |
+| `/add` | Add an expense (guided dialog) |
+| `/income` | Add income (guided dialog) |
+| `/transfer` | Transfer between accounts (guided dialog) |
 | `/balance` | Show current balance for all accounts |
-| `/report` | Monthly income/expense report with per-category breakdown |
-| `/stats` | Statistics and charts |
-| `/import` | Upload a bank statement file (MT940 or Sparkasse CSV) |
-| `/pending` | Review and categorize unclassified transactions from imports |
-| `/budget` | View budget limits per category |
-| `/settings` | User and family settings |
+| `/report` | Monthly income/expense report with chart |
+| `/stats` | Spending analytics with chart |
+| `/import` | Upload a bank statement (MT940 or Sparkasse CSV) |
+| `/pending` | Review and categorize unclassified import transactions |
+| `/budget` | View monthly budget limits per category |
+| `/meter` | Submit an electricity or water meter reading |
 | `/help` | Show all available commands |
-| `/cancel` | Cancel the current in-progress dialog |
 
 ### Quick text input
 
-Instead of using `/add`, type the amount and a description directly:
+Type amount and description directly — no command needed:
 
 ```
 50 coffee
 150.50 restaurant
 ```
 
-The bot auto-detects the category using keyword rules and posts the expense to the default account. Inline buttons in the confirmation message let you reassign the category or delete the transaction.
+The bot auto-categorizes via keyword rules and posts to the default account. Inline buttons let you change the category or delete the transaction.
+
+---
+
+## Meter Readings
+
+Track electricity and water consumption without leaving Telegram.
+
+### Submitting a reading
+
+1. Send `/meter`
+2. Select **⚡ Electricity** or **💧 Water**
+3. Type the current value (e.g. `12345.67`). The bot shows the previous reading for reference
+4. Send a photo of the meter — or type `skip`
+
+The reading is saved with today's date. Consumption delta is calculated automatically.
+
+### Web dashboard — `/meters`
+
+- Bar charts of consumption over time (kWh / m³)
+- Full reading history with consumption delta per period
+- Links to view saved meter photos
+- Delete individual readings
+
+---
+
+## Reminders
+
+Schedule recurring notifications delivered to family members via Telegram and/or email.
+
+### Configuring reminders
+
+Admin panel → **Notifications → Reminders** (`/admin`).
+
+| Field | Description |
+|---|---|
+| **Name** | Internal label, e.g. "Submit electricity meter" |
+| **Family** | Target family — leave empty to send to all families |
+| **Type** | `meter_electricity`, `meter_water`, `budget_check`, `savings_check`, or `custom` |
+| **Frequency** | `daily`, `weekly`, or `monthly` |
+| **Send at hour** | Hour 0–23; the cron command runs hourly and fires when current hour matches |
+| **Day of week** | For weekly: 1 = Monday … 7 = Sunday |
+| **Day of month** | For monthly: 1–31 |
+| **Message text** | Notification body sent to all recipients |
+| **Send via Telegram** | On/off |
+| **Send via Email** | On/off (requires `MAILER_DSN`) |
+| **Active** | Enable/disable without deleting |
+
+### Cron setup (production)
+
+```bash
+crontab -e
+# Add:
+0 * * * * docker compose -f /opt/family-finance/docker-compose.prod.yml exec -T app php bin/console app:reminders:send >> /var/log/family-finance-reminders.log 2>&1
+```
+
+The command checks every active template, dispatches due reminders to the worker queue, and updates `last_sent_at` to prevent duplicate sends.
+
+### Email configuration
+
+```dotenv
+# Disable (default, safe for dev)
+MAILER_DSN=null://null
+
+# SMTP
+MAILER_DSN=smtp://user:pass@smtp.example.com:587
+
+# Gmail
+MAILER_DSN=gmail+smtp://your@gmail.com:app-password@default
+
+MAILER_FROM=noreply@yourdomain.com
+```
 
 ---
 
 ## Web Interface
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:8080**.
 
-The web dashboard provides:
-
-- Transaction list with filtering, search, and pagination
-- Account management (create, edit, set default)
-- Category tree management with budget limits
-- Savings goals tracking with progress indicators
-- Monthly and custom-range analytics with Chart.js charts
+| Section | URL | Description |
+|---|---|---|
+| Dashboard | `/dashboard` | Balance summary, 6-month trend |
+| Transactions | `/transactions` | List with filtering, search, pagination |
+| Accounts | `/accounts` | Create and manage accounts |
+| Categories | `/categories` | Hierarchical category tree |
+| Budgets | `/budgets` | Monthly limits per category |
+| Savings Goals | `/savings-goals` | Target tracking with progress |
+| Meters | `/meters` | Electricity and water reading history + charts |
+| Imports | `/imports` | Uploaded bank statement files |
+| Pending | `/imports/pending` | Unclassified import transactions |
+| Recommendations | `/recommendations` | Automated financial suggestions |
+| Settings | `/settings` | User profile, family settings, add family member |
+| Admin | `/admin` | EasyAdmin CRUD for all entities |
 
 ### Create the first web user
 
@@ -185,93 +251,65 @@ docker compose exec app php bin/console app:user:create admin@example.com "Admin
 
 ## Adding a Second Family Member
 
-There is currently no self-service invite flow. A second member can be added in two ways:
+### Via web settings
 
-### Via Telegram (recommended)
+Go to **Settings → Add Family Member** (`/settings/users/new`) to create a new user directly into your family.
 
-1. The second person sends `/start` to the bot — this creates their own separate family
-2. Find their new user record in the database:
+### Via Telegram (manual SQL)
+
+1. Second person sends `/start` — creates their own family
+2. Find their record:
    ```sql
-   SELECT id, name, email, family_id FROM users ORDER BY created_at DESC LIMIT 5;
+   SELECT id, name, family_id FROM users ORDER BY created_at DESC LIMIT 5;
    ```
-3. Update their `family_id` to match the first person's family:
+3. Move them into your family:
    ```sql
-   UPDATE users SET family_id = '<first-person-family-uuid>' WHERE id = '<second-person-uuid>';
-   ```
-4. Delete the now-orphaned family that was auto-created for them:
-   ```sql
+   UPDATE users SET family_id = '<your-family-uuid>' WHERE id = '<their-uuid>';
    DELETE FROM families WHERE id = '<orphaned-family-uuid>';
    ```
 
-### Via console command (web-only users)
+### Via console (web-only users)
 
 ```bash
 docker compose exec app php bin/console app:user:create member@example.com "Anna" password
+# Then reassign family_id via SQL as above
 ```
-
-This creates a new user with their own family. Then follow the SQL steps above to move them into the shared family.
-
-> **Note:** A proper invite-link flow is on the roadmap. For now, the SQL approach takes about 30 seconds and is safe to do on a live database.
 
 ---
 
 ## Categorization Rules
 
-The bot uses rules to automatically assign a category to imported transactions. Rules are matched in two ways:
+Rules auto-assign categories to imported transactions. Two matching strategies:
 
-- **By counterparty IBAN** — exact match, highest priority. Useful for recurring payments (rent, insurance, salary).
-- **By keyword** — substring match (case-insensitive) in the transaction description. Multiple keywords per rule are supported.
+- **By counterparty IBAN** — exact match, highest priority. For recurring payments (rent, salary, insurance).
+- **By keyword** — case-insensitive substring match in description. Multiple keywords per rule.
 
-Rules are managed directly in the database. There is no web UI for rules yet.
+Rules evaluated in descending `priority` order. First match wins. No-match transactions go to `pending`.
 
 ### Add a rule via SQL
 
 ```sql
--- First, find the family UUID and category UUID you want to use
 SELECT id, name FROM families;
-SELECT id, name FROM categories WHERE family_id = '<your-family-uuid>';
+SELECT id, name FROM categories WHERE family_id = '<family-uuid>';
 
--- Rule: all transactions from IBAN DE89370400440532013000 → "Rent" category
+-- IBAN rule
 INSERT INTO category_rules (id, family_id, category_id, keywords, counterparty_iban, priority)
-VALUES (
-    gen_random_uuid(),
-    '<family-uuid>',
-    '<rent-category-uuid>',
-    '[]',                          -- no keywords needed for IBAN rule
-    'DE89370400440532013000',
-    10                             -- higher number = checked first
-);
+VALUES (gen_random_uuid(), '<family-uuid>', '<category-uuid>', '[]', 'DE89370400440532013000', 10);
 
--- Rule: description contains "rewe" or "lidl" → "Groceries" category
+-- Keyword rule
 INSERT INTO category_rules (id, family_id, category_id, keywords, counterparty_iban, priority)
-VALUES (
-    gen_random_uuid(),
-    '<family-uuid>',
-    '<groceries-category-uuid>',
-    '["rewe", "lidl", "aldi", "penny"]',
-    NULL,
-    5
-);
+VALUES (gen_random_uuid(), '<family-uuid>', '<category-uuid>', '["rewe", "lidl", "aldi"]', NULL, 5);
 ```
 
 ### Connect to the database
 
 ```bash
-# Development
+# Dev
 docker compose exec db psql -U app family_finance
 
-# Production
+# Prod
 docker compose -f docker-compose.prod.yml exec db psql -U app family_finance
 ```
-
-### How matching works
-
-When a transaction is imported, rules are evaluated in descending `priority` order:
-
-1. All IBAN rules are checked first across all priorities
-2. Then keyword rules in priority order
-
-The first match wins. Transactions with no match get status `pending` and appear in `/pending` for manual review. After you manually assign a category via `/pending`, consider adding a rule so the next import auto-classifies the same counterparty.
 
 ---
 
@@ -279,246 +317,92 @@ The first match wins. Transactions with no match get status `pending` and appear
 
 Supported formats:
 
-- **MT940** (`.sta`) — standard German bank export format
+- **MT940** (`.sta`) — standard German bank export
 - **Sparkasse CSV** (`.csv`) — Sparkasse-specific CSV export
 
-Import workflow:
+Workflow:
 
 1. Send `/import` to the bot
-2. Select the target account from the inline keyboard
-3. Upload the statement file as a Telegram document attachment
-4. The file is dispatched to the background worker queue and processed asynchronously — you do not wait for it
-5. You receive a Telegram notification when processing completes, including a count of imported and skipped (duplicate) transactions
-6. Send `/pending` to review and manually categorize any transactions the bot could not auto-classify
+2. Select the target account
+3. Upload the file as a Telegram document attachment
+4. Processing happens in the background — you get a Telegram notification when done with import counts
+5. Use `/pending` to categorize unclassified transactions
 
-Duplicate prevention: each imported transaction is identified by a SHA-256 hash of its key fields. Re-uploading the same file or overlapping date ranges will not create duplicates.
+Deduplication: SHA-256 hash of key transaction fields prevents double-imports.
 
 ---
 
-## Available Make Commands
+## Console Commands
 
 | Command | Description |
 |---|---|
-| `make up` | Start all Docker containers in the background |
+| `app:user:create <email> <name> <password> [--admin]` | Create a new web user |
+| `app:telegram:set-webhook` | Register the Telegram webhook with Telegram's API |
+| `app:report:weekly` | Generate and send weekly financial summary to all family members via Telegram |
+| `app:reminders:send` | Check active reminder templates and dispatch due notifications |
+
+---
+
+## Make Commands
+
+| Command | Description |
+|---|---|
+| `make up` | Start all Docker containers |
 | `make down` | Stop and remove all containers |
-| `make shell` | Open a bash shell inside the app container |
+| `make shell` | Open bash in the app container |
 | `make migrate` | Run pending database migrations |
-| `make fixtures` | Load fixture/seed data (development only) |
-| `make test` | Run the PHPUnit test suite |
-| `make cache-clear` | Clear the Symfony application cache |
-| `make set-webhook` | Register the Telegram webhook URL with Telegram's API |
-| `make assets` | Build frontend assets (one-time, development build) |
-| `make assets-watch` | Build frontend assets and watch for changes |
+| `make fixtures` | Load fixture/seed data (dev only) |
+| `make test` | Run PHPUnit test suite |
+| `make cache-clear` | Clear Symfony cache |
+| `make set-webhook` | Register Telegram webhook |
+| `make assets` | Build frontend assets (one-time) |
+| `make assets-watch` | Build assets and watch for changes |
 | `make analyse` | Run PHPStan static analysis |
-| `make install-hooks` | Install the git pre-commit hook (run once after cloning) |
+| `make install-hooks` | Install git pre-commit hook (run once after cloning) |
 
 ---
 
 ## Configuration Reference
 
-| Variable | Description | Example value |
+| Variable | Description | Default / Example |
 |---|---|---|
 | `APP_ENV` | Application environment | `dev` / `prod` |
-| `APP_SECRET` | Symfony secret key — change in production | `openssl rand -hex 32` output |
-| `DATABASE_URL` | PostgreSQL connection DSN | `postgresql://app:secret@db:5432/family_finance?serverVersion=16&charset=utf8` |
-| `REDIS_URL` | Redis connection URL (cache and sessions) | `redis://redis:6379` |
-| `MESSENGER_TRANSPORT_DSN` | Symfony Messenger queue transport | `redis://redis:6379/messages` |
+| `APP_SECRET` | Symfony secret — generate once, never rotate | `openssl rand -hex 32` |
+| `DATABASE_URL` | PostgreSQL DSN | `postgresql://app:secret@db:5432/family_finance?serverVersion=16&charset=utf8` |
+| `REDIS_URL` | Redis URL (cache, sessions) | `redis://redis:6379` |
+| `MESSENGER_TRANSPORT_DSN` | Messenger queue transport | `redis://redis:6379/messages` |
 | `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | `123456789:AAFxxxxxx` |
-| `TELEGRAM_WEBHOOK_URL` | Public HTTPS URL for incoming Telegram updates | `https://finance.example.com/telegram/webhook` |
-| `TELEGRAM_WEBHOOK_SECRET` | Secret token to authenticate Telegram requests | 32+ random hex characters |
-| `STORAGE_LOCAL_PATH` | Directory path for uploaded files (bank statements) | `%kernel.project_dir%/var/uploads` |
-| `DEFAULT_URI` | Base URL used when generating URLs in CLI context | `https://finance.example.com` |
+| `TELEGRAM_WEBHOOK_URL` | Public HTTPS URL for Telegram updates | `https://yourdomain.com/telegram/webhook` |
+| `TELEGRAM_WEBHOOK_SECRET` | Secret to authenticate Telegram requests | 32+ random hex chars |
+| `STORAGE_LOCAL_PATH` | Directory for uploaded files (imports, meter photos) | `%kernel.project_dir%/var/uploads` |
+| `DEFAULT_URI` | Base URL for CLI-generated links | `https://yourdomain.com` |
+| `MAILER_DSN` | Mailer transport DSN | `null://null` (disabled) |
+| `MAILER_FROM` | From address for reminder emails | `noreply@yourdomain.com` |
 
-> **Warning:** `APP_SECRET` is used by Symfony to sign sessions and security tokens. **Never change it after the first deployment** — doing so will invalidate all existing sessions and any signed URLs. Generate it once with `openssl rand -hex 32` and keep it in a secrets vault.
+> **`APP_SECRET`** signs Symfony sessions and tokens. Generate once with `openssl rand -hex 32`, store in a secrets vault, and never change it on a running instance.
 
 ---
 
-## Local Development Setup
+## Local Development
 
-### Install the pre-commit hook
-
-After cloning the repository, run the following **once** to activate the pre-commit hook:
+### Pre-commit hook
 
 ```bash
 make install-hooks
 ```
 
-From that point on, every `git commit` automatically runs:
+Every `git commit` then runs automatically:
 
-1. **PHPStan** — full static analysis of `src/` (level 6, with Symfony and Doctrine extensions)
+1. **PHPStan** — static analysis of `src/` at level 6 (with Symfony + Doctrine extensions)
 2. **PHP syntax check** — `php -l` on every staged `.php` file
 
-If either check fails the commit is aborted and the error is printed. Fix the issue, re-stage, and commit again. The hook can be bypassed in exceptional cases with `git commit --no-verify` (use sparingly).
+Fix failures, re-stage, commit again. Skip with `git commit --no-verify` only in exceptional cases.
 
----
-
-## Running Tests
+### Running tests
 
 ```bash
 make test
-# OR directly:
-docker compose exec app php bin/phpunit
-```
-
----
-
-## Upgrading
-
-### Minor updates (patch / minor versions)
-
-```bash
-ssh deploy@your-server-ip
-cd /opt/family-finance
-
-git pull origin main
-docker build -f docker/php/Dockerfile.prod -t family-finance:latest .
-docker compose -f docker-compose.prod.yml up -d --no-deps app worker
-docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction
-docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:warmup
-```
-
-### Checking for new environment variables
-
-After pulling a new version, compare `.env` (committed defaults) against your `.env.local`:
-
-```bash
-diff .env .env.local
-```
-
-New variables added to `.env` since your last deploy may need to be set in `.env.local` before restarting.
-
-### Keeping `APP_SECRET` stable
-
-`APP_SECRET` is used to sign Symfony sessions and tokens. **Never rotate it on a running instance** — all active sessions will be invalidated immediately. If you must rotate it (e.g. after a secret leak), schedule a maintenance window and warn users they will be logged out.
-
-### Database schema changes
-
-Migrations run automatically in the deploy steps above. To preview what will run without applying:
-
-```bash
-docker compose -f docker-compose.prod.yml exec app php bin/console doctrine:migrations:status
-docker compose -f docker-compose.prod.yml exec app php bin/console doctrine:migrations:migrate --dry-run
-```
-
-Always take a database backup before applying migrations to a production database.
-
----
-
-## Troubleshooting
-
-### Bot does not respond to messages
-
-1. **Check the webhook is registered:**
-   ```bash
-   curl "https://api.telegram.org/bot<YOUR_TOKEN>/getWebhookInfo"
-   ```
-   Look for `"url"` — it should match your `TELEGRAM_WEBHOOK_URL`. If it is empty, run `make set-webhook`.
-
-2. **Check the webhook URL is reachable from the internet:**
-   ```bash
-   curl -I https://yourdomain.com/telegram/webhook
-   ```
-   Expected: `HTTP/2 405` (Method Not Allowed for GET is correct — the endpoint only accepts POST).
-
-3. **Check the nginx and app container logs:**
-   ```bash
-   docker compose logs -f nginx app
-   ```
-
----
-
-### Webhook returns HTTP 403
-
-Your server is rejecting Telegram requests because the secret header does not match. Verify that `TELEGRAM_WEBHOOK_SECRET` in `.env.local` on the server is exactly the same value that was used when you registered the webhook. Re-register after any change:
-
-```bash
-docker compose exec app php bin/console app:telegram:set-webhook
-```
-
----
-
-### Imports are not being processed
-
-The import processor runs inside the `worker` container. Check if it is alive:
-
-```bash
-docker compose ps worker
-docker compose logs worker
-```
-
-If the worker exited, restart it:
-
-```bash
-docker compose restart worker
-```
-
-Check if there are messages stuck in the queue:
-
-```bash
-docker compose exec app php bin/console messenger:stats
-```
-
-If messages are stuck in the `failed` transport, inspect and retry them:
-
-```bash
-docker compose exec app php bin/console messenger:failed:show
-docker compose exec app php bin/console messenger:failed:retry
-```
-
----
-
-### Redis connection refused
-
-```
-redis: Connection refused [tcp://redis:6379]
-```
-
-The Redis container is not running or not reachable. Check:
-
-```bash
-docker compose ps redis
-docker compose restart redis
-```
-
----
-
-### "Class not found" or blank pages after deploy
-
-The Symfony cache is stale. Rebuild it:
-
-```bash
-docker compose exec app php bin/console cache:clear
-docker compose exec app php bin/console cache:warmup
-```
-
----
-
-### Database migration error
-
-If a migration fails mid-run, check the current state:
-
-```bash
-docker compose exec app php bin/console doctrine:migrations:status
-```
-
-Migrations that failed are marked as not executed. Fix the underlying issue (e.g. out-of-disk space, wrong DB user permissions) and re-run `doctrine:migrations:migrate`.
-
----
-
-### Telegram charts are not appearing
-
-Charts use the external [Quickchart.io](https://quickchart.io/) service. If it is blocked by your server's outbound firewall, or if you need full data privacy, you can self-host Quickchart:
-
-```bash
-docker run -p 3400:3400 ianw/quickchart
-```
-
-Then point the app at your local instance by setting the Quickchart base URL in `config/services.yaml`:
-
-```yaml
-App\Domain\Analytics\ChartGenerator:
-    arguments:
-        $quickchartBaseUrl: 'http://your-server:3400'
+# or: docker compose exec app php bin/phpunit
 ```
 
 ---
@@ -533,79 +417,40 @@ App\Domain\Analytics\ChartGenerator:
 | RAM | 1 GB | 2 GB |
 | Disk | 20 GB SSD | 40 GB SSD |
 | OS | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
-| Open ports | 22, 80, 443 | 22, 80, 443 |
-
----
+| Ports | 22, 80, 443 | 22, 80, 443 |
 
 ### Step 1 — Prepare the server
 
-Connect as root, then create a dedicated deploy user and install Docker:
-
 ```bash
-# Create a non-root deploy user
 adduser deploy
 usermod -aG sudo,docker deploy
-
-# Install Docker Engine (official script, Ubuntu 22.04)
 curl -fsSL https://get.docker.com | sh
 
-# Verify
-docker --version       # Docker version 26+
-docker compose version # Docker Compose version v2+
-```
-
-Configure the firewall:
-
-```bash
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw enable
 ```
 
----
-
-### Step 2 — Set up SSH access for deployment
-
-On your **local machine**, generate a key pair if you don't have one:
+### Step 2 — SSH access for deployment
 
 ```bash
+# Local machine
 ssh-keygen -t ed25519 -C "deploy@family-finance"
-```
-
-Copy the public key to the server:
-
-```bash
 ssh-copy-id deploy@your-server-ip
 ```
 
-Log in as the deploy user and confirm passwordless access works:
+### Step 3 — Clone and configure
 
 ```bash
 ssh deploy@your-server-ip
-```
-
----
-
-### Step 3 — Clone and configure the application
-
-```bash
-# Log in as deploy
-ssh deploy@your-server-ip
-
-# Create the application directory
-sudo mkdir -p /opt/family-finance
-sudo chown deploy:deploy /opt/family-finance
-
-# Clone the repository
-git clone https://github.com/your-org/family-finance-manager.git /opt/family-finance
+sudo mkdir -p /opt/family-finance && sudo chown deploy:deploy /opt/family-finance
+git clone https://github.com/akrbdk/family-finance-manager.git /opt/family-finance
 cd /opt/family-finance
-
-# Create production environment file
 cp .env .env.local
 ```
 
-Edit `/opt/family-finance/.env.local` and set all required values:
+Edit `.env.local`:
 
 ```dotenv
 APP_ENV=prod
@@ -624,23 +469,19 @@ TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 32>
 
 STORAGE_LOCAL_PATH=/var/www/html/var/uploads
 DEFAULT_URI=https://yourdomain.com
+
+MAILER_DSN=smtp://user:pass@smtp.example.com:587
+MAILER_FROM=noreply@yourdomain.com
 ```
 
----
-
-### Step 4 — Configure SSL with Nginx + Certbot (host-level)
-
-The production `docker-compose.prod.yml` exposes only port **80** from the nginx container. SSL termination is handled by a host-level Nginx acting as a reverse proxy, with certificates issued by Let's Encrypt.
+### Step 4 — SSL with Nginx + Certbot
 
 ```bash
-# Install Nginx and Certbot on the host
 sudo apt install -y nginx certbot python3-certbot-nginx
-
-# Obtain a certificate (stops Nginx temporarily)
 sudo certbot --nginx -d yourdomain.com
 ```
 
-Create `/etc/nginx/sites-available/family-finance`:
+`/etc/nginx/sites-available/family-finance`:
 
 ```nginx
 server {
@@ -657,7 +498,6 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
-
     client_max_body_size 20M;
 
     location / {
@@ -670,173 +510,186 @@ server {
 }
 ```
 
-Enable the site and reload:
-
 ```bash
 sudo ln -s /etc/nginx/sites-available/family-finance /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Update `docker-compose.prod.yml` to expose nginx on port 8080 instead of 80 (so the host Nginx can proxy to it):
+In `docker-compose.prod.yml`, bind nginx to localhost only:
 
 ```yaml
   nginx:
     ports:
-      - "127.0.0.1:8080:80"   # only accessible from localhost
+      - "127.0.0.1:8080:80"
 ```
-
-Certbot installs a systemd timer to auto-renew certificates. Verify it is active:
-
-```bash
-sudo systemctl status certbot.timer
-```
-
----
 
 ### Step 5 — First launch
 
-Build the Docker image on the server (or pull from your registry — see CI/CD section below):
-
 ```bash
 cd /opt/family-finance
-
-# Build the production image
 docker build -f docker/php/Dockerfile.prod -t family-finance:latest .
-
-# Start all services
 docker compose -f docker-compose.prod.yml up -d
-
-# Run database migrations
 docker compose -f docker-compose.prod.yml exec app php bin/console doctrine:migrations:migrate --no-interaction
-
-# Warm up the Symfony cache
 docker compose -f docker-compose.prod.yml exec app php bin/console cache:warmup
-
-# Create the first admin user
 docker compose -f docker-compose.prod.yml exec app php bin/console app:user:create admin@example.com "Admin" yourpassword --admin
-
-# Register the Telegram webhook
 docker compose -f docker-compose.prod.yml exec app php bin/console app:telegram:set-webhook
 ```
 
-Verify all containers are running:
+Verify: `docker compose -f docker-compose.prod.yml ps` — all five services (`app`, `nginx`, `db`, `redis`, `worker`) should be `running`.
+
+### Step 6 — Cron jobs
 
 ```bash
-docker compose -f docker-compose.prod.yml ps
-```
-
-Expected output: `app`, `nginx`, `db`, `redis`, `worker` all with status `running`.
-
----
-
-### Deploying updates
-
-#### Manual update
-
-```bash
-ssh deploy@your-server-ip
-cd /opt/family-finance
-
-# Pull the latest code
-git pull origin main
-
-# Rebuild the image
-docker build -f docker/php/Dockerfile.prod -t family-finance:latest .
-
-# Apply the update with zero-downtime restart
-docker compose -f docker-compose.prod.yml up -d --no-deps app worker nginx
-
-# Run any new migrations
-docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction
-
-# Warm up the cache
-docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:warmup
-```
-
-#### Automated via GitHub Actions
-
-The `.github/workflows/deploy.yml` pipeline runs on every push to `main`:
-
-1. Runs tests and PHPStan
-2. Builds and pushes the Docker image to your registry
-3. SSH-es into the server and pulls + restarts the containers
-
-Configure these **GitHub repository secrets** (Settings → Secrets → Actions):
-
-| Secret | Value |
-|---|---|
-| `REGISTRY` | Your Docker registry URL, e.g. `registry.example.com` or `ghcr.io/your-org` |
-| `HOST` | Server IP address or hostname |
-| `USER` | SSH user on the server (`deploy`) |
-| `SSH_KEY` | Private SSH key (`cat ~/.ssh/id_ed25519`) |
-
-After adding the secrets, push to `main` — the pipeline will build, push, and deploy automatically.
-
-#### Rollback
-
-To roll back to a previous image tag:
-
-```bash
-ssh deploy@your-server-ip
-cd /opt/family-finance
-
-APP_IMAGE=registry.example.com/family-finance:<previous-sha> \
-  docker compose -f docker-compose.prod.yml up -d app worker
-```
-
-Previous SHA values are visible in the GitHub Actions run history or with `docker images`.
-
----
-
-### Database backups
-
-The `scripts/backup.sh` script dumps the database and retains the last 30 days of backups:
-
-```bash
-# Run manually
-cd /opt/family-finance && bash scripts/backup.sh
-
-# Or schedule via cron (runs daily at 03:00)
 crontab -e
-# Add:
+```
+
+```cron
+# Scheduled reminders — run every hour
+0 * * * * docker compose -f /opt/family-finance/docker-compose.prod.yml exec -T app php bin/console app:reminders:send >> /var/log/family-finance-reminders.log 2>&1
+
+# Weekly report — every Monday at 08:00
+0 8 * * 1 docker compose -f /opt/family-finance/docker-compose.prod.yml exec -T app php bin/console app:report:weekly >> /var/log/family-finance-weekly.log 2>&1
+
+# Database backup — daily at 03:00
 0 3 * * * cd /opt/family-finance && bash scripts/backup.sh >> /var/log/family-finance-backup.log 2>&1
 ```
 
-Backups are stored in `/var/backups/family-finance/` as gzipped SQL files.
+### Deploying updates
 
-To restore a backup:
+```bash
+ssh deploy@your-server-ip
+cd /opt/family-finance
+
+git pull origin main
+docker build -f docker/php/Dockerfile.prod -t family-finance:latest .
+docker compose -f docker-compose.prod.yml up -d --no-deps app worker nginx
+docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction
+docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:warmup
+```
+
+After pulling a new version, check for new env vars:
+
+```bash
+diff .env .env.local
+```
+
+### Database backups
+
+Backups go to `/var/backups/family-finance/` as gzipped SQL, retained for 30 days.
+
+Restore:
 
 ```bash
 gunzip -c /var/backups/family-finance/family_finance_20250301_030000.sql.gz \
   | docker compose -f docker-compose.prod.yml exec -T db psql -U app family_finance
 ```
 
----
-
-### Monitoring and logs
+### Monitoring
 
 ```bash
-# Live logs from all containers
-docker compose -f docker-compose.prod.yml logs -f
-
-# Logs from a specific container
 docker compose -f docker-compose.prod.yml logs -f worker
-
-# Check worker is consuming messages
 docker compose -f docker-compose.prod.yml exec app php bin/console messenger:stats
-
-# Restart the worker if it gets stuck
 docker compose -f docker-compose.prod.yml restart worker
 ```
 
 ---
 
-## Architecture Notes
+## Troubleshooting
 
-- **Dialog state** is stored in Redis with a 30-minute TTL. In-progress multi-step dialogs (e.g. adding an expense) are lost if Redis restarts — this is an acceptable tradeoff for simplicity.
-- **Background processing** uses a dedicated `worker` container running `messenger:consume async`. Bank statement imports and other async tasks are handled here without blocking the bot response.
-- **Charts in Telegram** are generated via [Quickchart.io](https://quickchart.io/) as PNG images, since Chart.js requires a browser context. You can self-host a Quickchart instance for full data privacy.
-- **Conversation routing**: incoming Telegram updates flow through `UpdateDispatcher` → `CommandRegistry` or `ConversationManager`. Active dialogs take priority over command parsing, so mid-dialog messages are always routed correctly.
+### Bot does not respond
+
+1. Check webhook is registered:
+   ```bash
+   curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
+   ```
+   `"url"` must match `TELEGRAM_WEBHOOK_URL`. If empty, run `make set-webhook`.
+
+2. Check endpoint is reachable:
+   ```bash
+   curl -I https://yourdomain.com/telegram/webhook
+   # Expected: HTTP 405 (GET not allowed — correct)
+   ```
+
+3. Check logs:
+   ```bash
+   docker compose logs -f nginx app
+   ```
+
+### Webhook returns HTTP 403
+
+`TELEGRAM_WEBHOOK_SECRET` mismatch. Verify `.env.local` on the server matches the value used at registration, then re-register:
+
+```bash
+docker compose exec app php bin/console app:telegram:set-webhook
+```
+
+### Imports not processing
+
+```bash
+docker compose ps worker
+docker compose logs worker
+docker compose restart worker
+docker compose exec app php bin/console messenger:failed:show
+docker compose exec app php bin/console messenger:failed:retry
+```
+
+### Reminders not sending
+
+1. Check cron is installed: `crontab -l | grep reminders`
+2. Test manually:
+   ```bash
+   docker compose exec app php bin/console app:reminders:send
+   # Expected: "Done. Dispatched N reminder(s)."
+   ```
+3. Check `last_sent_at` — if today, it already fired and won't repeat until next period:
+   ```sql
+   SELECT name, frequency, last_sent_at FROM reminder_templates;
+   ```
+4. For email: verify `MAILER_DSN` is not `null://null`
+
+### Redis connection refused
+
+```bash
+docker compose ps redis
+docker compose restart redis
+```
+
+### Blank page / class not found after deploy
+
+```bash
+docker compose exec app php bin/console cache:clear
+docker compose exec app php bin/console cache:warmup
+```
+
+### Migration error
+
+```bash
+docker compose exec app php bin/console doctrine:migrations:status
+# Fix the cause, then:
+docker compose exec app php bin/console doctrine:migrations:migrate
+```
+
+### Charts missing in Telegram
+
+Charts use [Quickchart.io](https://quickchart.io/). To self-host:
+
+```bash
+docker run -p 3400:3400 ianw/quickchart
+```
+
+Then in `config/services.yaml`:
+
+```yaml
+App\Domain\Analytics\ChartGenerator:
+    arguments:
+        $quickchartBaseUrl: 'http://your-server:3400'
+```
+
+---
+
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed breakdown of the system design, request flows, entity relationships, and service layer.
 
 ---
 
