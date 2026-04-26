@@ -93,7 +93,7 @@ class ImportProcessor
             // Notify user about the completed import
             $this->notifier->notifyImportComplete($importFile, $pending);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $importFile
                 ->setStatus(ImportStatus::Failed)
                 ->setErrorMessage($e->getMessage());

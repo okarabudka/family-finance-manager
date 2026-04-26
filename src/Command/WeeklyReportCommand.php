@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Domain\Suggestion\SuggestionService;
 use App\Repository\FamilyRepository;
 use App\Telegram\TelegramSender;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,6 +23,7 @@ class WeeklyReportCommand extends Command
         private readonly FamilyRepository $familyRepo,
         private readonly SuggestionService $suggestionService,
         private readonly TelegramSender $sender,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct();
     }
@@ -31,7 +33,16 @@ class WeeklyReportCommand extends Command
         $families = $this->familyRepo->findAll();
 
         foreach ($families as $family) {
-            $suggestions = $this->suggestionService->getSuggestions($family);
+            try {
+                $suggestions = $this->suggestionService->getSuggestions($family);
+            } catch (\Throwable $e) {
+                $this->logger->error('WeeklyReportCommand: getSuggestions failed', [
+                    'family' => (string) $family->getId(),
+                    'error'  => $e->getMessage(),
+                ]);
+                $output->writeln(sprintf('<error>Skipped family %s: %s</error>', $family->getId(), $e->getMessage()));
+                continue;
+            }
 
             foreach ($family->getMembers() as $user) {
                 $chatId = $user->getTelegramChatId();

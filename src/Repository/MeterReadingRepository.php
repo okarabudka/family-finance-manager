@@ -20,18 +20,6 @@ class MeterReadingRepository extends ServiceEntityRepository
         parent::__construct($registry, MeterReading::class);
     }
 
-    /** @return MeterReading[] */
-    public function findByFamily(Family $family): array
-    {
-        return $this->createQueryBuilder('mr')
-            ->where('mr.family = :family')
-            ->setParameter('family', $family)
-            ->orderBy('mr.readingDate', 'DESC')
-            ->addOrderBy('mr.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
     /** @return MeterReading[] ordered ASC for consumption calculation */
     public function findByFamilyAndType(Family $family, MeterType $type): array
     {

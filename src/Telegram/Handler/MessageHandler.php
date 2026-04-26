@@ -78,6 +78,7 @@ class MessageHandler
             : 'No category (tap to assign)';
 
         $amountFormatted = number_format((float) $parsed->amount, 2, '.', ' ');
+        $currency        = $user->getFamily()->getCurrency();
 
         $keyboard = [
             'inline_keyboard' => [[
@@ -88,7 +89,7 @@ class MessageHandler
 
         $this->sender->sendMessage(
             $chatId,
-            "Recorded!\n{$amountFormatted} EUR\n{$categoryText}",
+            "Recorded!\n{$amountFormatted} {$currency}\n{$categoryText}",
             $keyboard,
         );
     }

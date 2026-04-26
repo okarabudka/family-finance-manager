@@ -132,30 +132,34 @@ class TransactionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Returns category IDs that had regular transactions (at least N months out of the last X).
-     * Used in SuggestionService to detect missing regular expenses.
+     * Returns category IDs that had regular transactions (present in at least $months distinct months
+     * within the last $months months). Uses native SQL to avoid non-standard YEAR()/MONTH() DQL functions.
+     *
+     * @return array<int, string>
      */
-    /** @return array<int, string> */
     public function findRegularCategories(Family $family, int $months = 3): array
     {
-        $from = new \DateTimeImmutable("-{$months} months");
+        $from = (new \DateTimeImmutable("-{$months} months"))->format('Y-m-d');
 
-        $rows = $this->createQueryBuilder('t')
-            ->select('IDENTITY(t.category) as categoryId, COUNT(DISTINCT YEAR(t.executedAt) * 100 + MONTH(t.executedAt)) as monthCount')
-            ->where('t.family = :family')
-            ->andWhere('t.executedAt >= :from')
-            ->andWhere('t.type = :type')
-            ->andWhere('t.category IS NOT NULL')
-            ->setParameter('family', $family)
-            ->setParameter('from', $from)
-            ->setParameter('type', TransactionType::Expense)
-            ->groupBy('t.category')
-            ->having('monthCount >= :months')
-            ->setParameter('months', $months)
-            ->getQuery()
-            ->getArrayResult();
+        $sql = <<<SQL
+            SELECT CAST(category_id AS VARCHAR) AS category_id
+            FROM transactions
+            WHERE family_id    = :familyId
+              AND executed_at >= :from
+              AND type         = :type
+              AND category_id IS NOT NULL
+            GROUP BY category_id
+            HAVING COUNT(DISTINCT TO_CHAR(executed_at, 'YYYY-MM')) >= :months
+        SQL;
 
-        return array_column($rows, 'categoryId');
+        $rows = $this->getEntityManager()->getConnection()->executeQuery($sql, [
+            'familyId' => (string) $family->getId(),
+            'from'     => $from,
+            'type'     => TransactionType::Expense->value,
+            'months'   => $months,
+        ])->fetchFirstColumn();
+
+        return array_values($rows);
     }
 
     /**
@@ -203,12 +207,16 @@ class TransactionRepository extends ServiceEntityRepository
                ->setParameter('category', $filters['category']);
         }
         if (!empty($filters['from'])) {
-            $qb->andWhere('t.executedAt >= :from')
-               ->setParameter('from', new \DateTimeImmutable($filters['from']));
+            $fromDate = \DateTimeImmutable::createFromFormat('Y-m-d', $filters['from']);
+            if ($fromDate !== false) {
+                $qb->andWhere('t.executedAt >= :from')->setParameter('from', $fromDate);
+            }
         }
         if (!empty($filters['to'])) {
-            $qb->andWhere('t.executedAt <= :to')
-               ->setParameter('to', new \DateTimeImmutable($filters['to']));
+            $toDate = \DateTimeImmutable::createFromFormat('Y-m-d', $filters['to']);
+            if ($toDate !== false) {
+                $qb->andWhere('t.executedAt <= :to')->setParameter('to', $toDate);
+            }
         }
 
         return $qb;

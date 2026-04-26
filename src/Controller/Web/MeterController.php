@@ -12,8 +12,10 @@ use App\Repository\MeterReadingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Mime\MimeTypes;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -63,21 +65,27 @@ class MeterController extends AbstractController
             throw $this->createNotFoundException('Photo not found.');
         }
 
+        $mimeType = MimeTypes::getDefault()->guessMimeType($path) ?? 'application/octet-stream';
+
         $response = new BinaryFileResponse($path);
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE);
-        $response->headers->set('Content-Type', 'image/jpeg');
+        $response->headers->set('Content-Type', $mimeType);
 
         return $response;
     }
 
     #[Route('/{id}/delete', name: 'meter_delete', methods: ['POST'])]
-    public function delete(MeterReading $reading, EntityManagerInterface $em): Response
+    public function delete(MeterReading $reading, EntityManagerInterface $em, Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
         if ($user->getFamily() === null || !$reading->getFamily()->getId()->equals($user->getFamily()->getId())) {
             throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('delete_meter_' . $reading->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         $em->remove($reading);

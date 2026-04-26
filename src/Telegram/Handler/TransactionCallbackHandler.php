@@ -57,13 +57,14 @@ class TransactionCallbackHandler
             return;
         }
 
-        $amount = number_format((float) $transaction->getAmount(), 2, '.', ' ');
-        $desc   = $transaction->getDescription() ?? '';
+        $amount   = number_format((float) $transaction->getAmount(), 2, '.', ' ');
+        $desc     = $transaction->getDescription() ?? '';
+        $currency = $transaction->getCurrency();
         $this->transactionService->delete($transaction);
 
         $this->sender->sendMessage(
             $chatId,
-            'Deleted: ' . $amount . ' EUR' . ($desc !== '' ? " — {$desc}" : ''),
+            'Deleted: ' . $amount . ' ' . $currency . ($desc !== '' ? " — {$desc}" : ''),
         );
     }
 

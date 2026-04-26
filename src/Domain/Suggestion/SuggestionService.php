@@ -38,6 +38,7 @@ class SuggestionService
             $prevTo,
         );
 
+        $currency    = $family->getCurrency();
         $suggestions = [];
 
         // 1. Categories with abnormal growth (> 30%)
@@ -48,11 +49,13 @@ class SuggestionService
                     priority: SuggestionPriority::High,
                     title: "Expense increase: {$comp->category->getName()}",
                     message: sprintf(
-                        'This month you spent %.0f EUR on %s, which is %.0f%% more than last month (%.0f EUR).',
+                        'This month you spent %.0f %s on %s, which is %.0f%% more than last month (%.0f %s).',
                         $comp->currentAmount,
+                        $currency,
                         $comp->category->getName(),
                         $comp->diffPercent,
                         $comp->previousAmount,
+                        $currency,
                     ),
                     category: $comp->category,
                     amount: $comp->diff,
@@ -68,11 +71,13 @@ class SuggestionService
                     priority: SuggestionPriority::High,
                     title: "Budget exceeded: {$catReport->category->getName()}",
                     message: sprintf(
-                        'Budget for %s exceeded by %.0f%%. Spent %.0f EUR of %.0f EUR planned.',
+                        'Budget for %s exceeded by %.0f%%. Spent %.0f %s of %.0f %s planned.',
                         $catReport->category->getName(),
                         $catReport->budgetUsedPercent - 100,
                         $catReport->amount,
+                        $currency,
                         $catReport->budgetAmount,
+                        $currency,
                     ),
                     category: $catReport->category,
                     amount: $catReport->amount - ($catReport->budgetAmount ?? 0),
@@ -88,9 +93,10 @@ class SuggestionService
                 priority: SuggestionPriority::Critical,
                 title: 'Expenses exceed income',
                 message: sprintf(
-                    '%d days left this month. Expenses exceed income by %.0f EUR.',
+                    '%d days left this month. Expenses exceed income by %.0f %s.',
                     $daysLeft,
                     abs($comparison->current->balance),
+                    $currency,
                 ),
             );
         }

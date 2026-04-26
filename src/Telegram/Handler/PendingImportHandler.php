@@ -43,12 +43,13 @@ class PendingImportHandler
             return;
         }
 
-        $amount = (float) $pending->getAmount();
-        $sign   = $amount > 0 ? '+' : '';
+        $amount   = (float) $pending->getAmount();
+        $sign     = $amount > 0 ? '+' : '';
+        $currency = $importFile->getAccount()->getCurrency();
 
         $text = "*Unrecognised transaction*\n\n"
             . "Date: {$pending->getDate()->format('d.m.Y')}\n"
-            . "Amount: {$sign}" . number_format($amount, 2, '.', ' ') . " EUR\n"
+            . "Amount: {$sign}" . number_format($amount, 2, '.', ' ') . " {$currency}\n"
             . "Description: {$pending->getRawDescription()}\n";
 
         if ($pending->getCounterpartyName() !== null) {

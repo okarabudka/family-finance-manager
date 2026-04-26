@@ -44,10 +44,12 @@ class ReportCommandHandler implements CommandHandlerInterface
         $totalExpenses  = number_format($report->totalExpenses, 2, '.', ' ');
         $balance        = number_format($report->balance, 2, '.', ' ');
 
+        $currency = $user->getFamily()->getCurrency();
+
         $text  = "*Report for {$monthLabel}*\n\n";
-        $text .= "Income:   *{$totalIncome} EUR*\n";
-        $text .= "Expenses: *{$totalExpenses} EUR*\n";
-        $text .= "Balance:  *{$balance} EUR*\n";
+        $text .= "Income:   *{$totalIncome} {$currency}*\n";
+        $text .= "Expenses: *{$totalExpenses} {$currency}*\n";
+        $text .= "Balance:  *{$balance} {$currency}*\n";
 
         if (count($report->byCategory) > 0) {
             $text .= "\n*By category:*\n";
@@ -55,7 +57,7 @@ class ReportCommandHandler implements CommandHandlerInterface
             foreach ($report->byCategory as $item) {
                 $pct    = round($item->percent);
                 $amount = number_format($item->amount, 2, '.', ' ');
-                $text  .= "- {$item->category->getName()}: {$amount} EUR ({$pct}%)\n";
+                $text  .= "- {$item->category->getName()}: {$amount} {$currency} ({$pct}%)\n";
             }
         }
 
@@ -116,10 +118,11 @@ class ReportCommandHandler implements CommandHandlerInterface
 
     private function sendDetails(int $chatId, Family $family): void
     {
-        $now    = new \DateTimeImmutable();
-        $from   = new \DateTimeImmutable($now->format('Y-m-01'));
-        $to     = new \DateTimeImmutable($now->format('Y-m-t'));
-        $report = $this->analyticsService->getMonthlyReport($family, $from, $to);
+        $now      = new \DateTimeImmutable();
+        $from     = new \DateTimeImmutable($now->format('Y-m-01'));
+        $to       = new \DateTimeImmutable($now->format('Y-m-t'));
+        $report   = $this->analyticsService->getMonthlyReport($family, $from, $to);
+        $currency = $family->getCurrency();
 
         if (empty($report->byCategory)) {
             $this->sender->sendMessage($chatId, 'No expense data for this month yet.');
@@ -132,9 +135,9 @@ class ReportCommandHandler implements CommandHandlerInterface
             $amount = number_format($item->amount, 2, '.', ' ');
             $pct    = round($item->percent);
             $budget = $item->budgetAmount !== null
-                ? ' / ' . number_format($item->budgetAmount, 2, '.', ' ') . ' planned'
+                ? ' / ' . number_format($item->budgetAmount, 2, '.', ' ') . " {$currency} planned"
                 : '';
-            $text .= "*{$item->category->getName()}*: {$amount} EUR ({$pct}%){$budget}\n";
+            $text .= "*{$item->category->getName()}*: {$amount} {$currency} ({$pct}%){$budget}\n";
         }
 
         $this->sender->sendMessage($chatId, $text, parseMode: 'Markdown');

@@ -90,8 +90,8 @@ class AnalyticsService
         \DateTimeImmutable $previousFrom,
         \DateTimeImmutable $previousTo,
     ): PeriodComparison {
-        $current = $this->buildMonthlyReport($family, $currentFrom, $currentTo);
-        $previous = $this->buildMonthlyReport($family, $previousFrom, $previousTo);
+        $current = $this->getMonthlyReport($family, $currentFrom, $currentTo);
+        $previous = $this->getMonthlyReport($family, $previousFrom, $previousTo);
 
         $comparisons = [];
         foreach ($current->byCategory as $currentCat) {

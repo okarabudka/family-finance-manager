@@ -30,7 +30,6 @@ class TransactionService
     {
         $this->cache->delete("monthly_report_{$family->getId()}_{$date->format('Y-m')}");
         $this->cache->delete("monthly_trend_{$family->getId()}_6");
-        $this->cache->delete("monthly_trend_{$family->getId()}_12");
     }
 
     public function addExpense(

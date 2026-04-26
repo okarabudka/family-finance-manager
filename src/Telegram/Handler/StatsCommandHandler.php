@@ -61,15 +61,16 @@ class StatsCommandHandler implements CommandHandlerInterface
             'Expenses ' . $now->format('F Y'),
         );
 
-        $caption = sprintf(
+        $currency = $family->getCurrency();
+        $caption  = sprintf(
             "*Expenses by category — %s*\n\n"
-            . "Expenses: *%.2f EUR*\n"
-            . "Income:   *%.2f EUR*\n"
-            . "Saved:    *%.2f EUR*",
+            . "Expenses: *%.2f %s*\n"
+            . "Income:   *%.2f %s*\n"
+            . "Saved:    *%.2f %s*",
             $now->format('F Y'),
-            $report->totalExpenses,
-            $report->totalIncome,
-            $report->balance,
+            $report->totalExpenses, $currency,
+            $report->totalIncome,   $currency,
+            $report->balance,       $currency,
         );
 
         $this->sender->sendPhoto($chatId, $chartPath, $caption);

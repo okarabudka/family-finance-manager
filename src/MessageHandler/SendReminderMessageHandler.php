@@ -26,7 +26,7 @@ class SendReminderMessageHandler
         private readonly TelegramSender $telegramSender,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface $logger,
-        private readonly ?MailerInterface $mailer = null,
+        private readonly MailerInterface $mailer,
         private readonly string $mailerFrom = 'noreply@family-finance.local',
     ) {}
 
@@ -86,13 +86,6 @@ class SendReminderMessageHandler
 
     private function sendEmail(User $user, ReminderTemplate $template): void
     {
-        if ($this->mailer === null) {
-            $this->logger->warning('Mailer not configured — skipping email reminder', [
-                'template' => (string) $template->getId(),
-            ]);
-            return;
-        }
-
         try {
             $email = (new Email())
                 ->from($this->mailerFrom)

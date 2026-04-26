@@ -122,16 +122,18 @@ class AddMeterConversation implements ConversationInterface
     private function handlePhotoInput(int $chatId, array $update, array $state): void
     {
         $text      = strtolower(trim($update['message']['text'] ?? ''));
+        $photos    = $update['message']['photo'] ?? [];
         $photoPath = null;
 
-        if ($text !== 'skip' && $text !== '') {
+        $hasPhoto = !empty($photos);
+        $isSkip   = $text === 'skip';
+
+        if (!$hasPhoto && !$isSkip) {
             $this->sender->sendMessage($chatId, 'Please send a photo or type *skip*:', parseMode: 'Markdown');
             return;
         }
 
-        $photos = $update['message']['photo'] ?? [];
-
-        if (!empty($photos)) {
+        if ($hasPhoto) {
             // Telegram sends multiple sizes — pick largest (last)
             $largestPhoto = end($photos);
             $fileId       = $largestPhoto['file_id'];

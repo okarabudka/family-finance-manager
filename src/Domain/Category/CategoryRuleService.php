@@ -6,7 +6,6 @@ namespace App\Domain\Category;
 
 use App\Entity\Category;
 use App\Entity\Family;
-use App\Entity\Transaction;
 use App\Repository\CategoryRuleRepository;
 
 class CategoryRuleService
@@ -46,17 +45,4 @@ class CategoryRuleService
         return null;
     }
 
-    /**
-     * When a user manually assigns a category to an imported transaction,
-     * this can be used to learn and propose a new rule for future automation.
-     */
-    public function learnFromTransaction(Transaction $transaction): void
-    {
-        // Only act on transactions that originated from an import
-        if ($transaction->getImportOrigin() === null) {
-            return;
-        }
-
-        // Logic for proposing a new rule is queued for user confirmation
-    }
 }
