@@ -77,19 +77,20 @@ class Mt940Parser implements ImportParserInterface
 
             // Find the :86: block that comes right after this :61: block
             $description = '';
-            $txOffset = $match[0][1];
+            $raw         = '';
+            $txOffset    = $match[0][1];
             foreach ($descMatches as $descMatch) {
                 $descOffset = $descMatch[0][1];
                 if ($descOffset > $txOffset) {
-                    $raw = $descMatch[1][0];
+                    $raw         = $descMatch[1][0];
                     $description = $this->cleanDescription($raw);
                     break;
                 }
             }
 
-            // Extract counterparty IBAN from description (IBAN+ tag in structured MT940)
-            $counterpartyIban = $this->extractIban($descMatches[$i][1][0] ?? '');
-            $counterpartyName = $this->extractName($descMatches[$i][1][0] ?? '');
+            // Extract counterparty IBAN/name from the matched :86: block
+            $counterpartyIban = $this->extractIban($raw);
+            $counterpartyName = $this->extractName($raw);
 
             $transactions[] = [
                 'date'             => $date->format('Y-m-d'),

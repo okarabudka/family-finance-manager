@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Telegram;
 
+use Psr\Log\LoggerInterface;
+
 class CommandRegistry
 {
     /**
@@ -11,6 +13,8 @@ class CommandRegistry
      */
     public function __construct(
         private readonly array $handlers,
+        private readonly TelegramSender $sender,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -18,11 +22,13 @@ class CommandRegistry
      */
     public function execute(string $command, array $update): void
     {
-        $chatId  = $update['message']['chat']['id'] ?? 0;
+        $chatId  = (int) ($update['message']['chat']['id'] ?? 0);
         $handler = $this->handlers[$command] ?? null;
 
         if ($handler === null) {
-            // Unknown command — silently ignore
+            $this->logger->info('Unknown Telegram command', ['command' => $command, 'chatId' => $chatId]);
+            $this->sender->sendMessage($chatId, "Unknown command. Use /help to see available commands.");
+
             return;
         }
 

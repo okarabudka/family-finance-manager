@@ -23,6 +23,10 @@ class AppFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
+        if (($_ENV['APP_ENV'] ?? 'dev') === 'prod') {
+            throw new \RuntimeException('Fixtures must not be loaded in production.');
+        }
+
         $family = new Family();
         $family->setName('Моя семья')->setCurrency('EUR');
         $manager->persist($family);

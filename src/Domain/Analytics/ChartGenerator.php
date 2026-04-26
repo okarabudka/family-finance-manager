@@ -98,7 +98,9 @@ class ChartGenerator
                 ],
             ]);
 
-            file_put_contents($tmpFile, $response->getContent());
+            if (file_put_contents($tmpFile, $response->getContent()) === false) {
+                throw new \RuntimeException("Failed to write chart image to {$tmpFile}");
+            }
         } catch (\Throwable $e) {
             // Do not leave a broken file on disk
             if (file_exists($tmpFile)) {

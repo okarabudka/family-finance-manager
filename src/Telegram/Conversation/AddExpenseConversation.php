@@ -39,7 +39,8 @@ class AddExpenseConversation implements ConversationInterface
             1 => $this->handleAmount($chatId, $text, $state),
             2 => $this->handleCategory($chatId, $callbackData, $state),
             3 => $this->handleAccount($chatId, $callbackData, $state),
-            4 => $this->handleDate($chatId, $text, $state),
+            4 => $this->handleDescription($chatId, $text, $state),
+            5 => $this->handleDate($chatId, $text, $state),
             default => null,
         };
     }
@@ -120,6 +121,17 @@ class AddExpenseConversation implements ConversationInterface
         $accountId                = substr($callbackData, 8);
         $state['data']['accountId'] = $accountId;
         $state['step']            = 4;
+        $this->conversationManager->updateState($chatId, $state);
+
+        $this->sender->sendMessage($chatId, 'Enter a description (or type "-" to skip):');
+    }
+
+    /** @param array<string, mixed> $state */
+    private function handleDescription(int $chatId, string $text, array $state): void
+    {
+        $description = trim($text);
+        $state['data']['description'] = ($description === '-') ? '' : $description;
+        $state['step'] = 5;
         $this->conversationManager->updateState($chatId, $state);
 
         $this->sender->sendMessage(

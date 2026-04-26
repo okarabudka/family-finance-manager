@@ -8,10 +8,12 @@ use App\Entity\Account;
 use App\Entity\AccountType;
 use App\Entity\Family;
 use App\Entity\User;
+use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class RegisterConversation implements ConversationInterface
 {
@@ -19,6 +21,8 @@ class RegisterConversation implements ConversationInterface
         private readonly EntityManagerInterface $em,
         private readonly ConversationManager $conversationManager,
         private readonly TelegramSender $sender,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly UserRepository $userRepo,
     ) {}
 
     /**
@@ -56,6 +60,13 @@ class RegisterConversation implements ConversationInterface
             return;
         }
 
+        if ($this->userRepo->findByTelegramChatId($chatId) !== null) {
+            $this->conversationManager->end($chatId);
+            $this->sender->sendMessage($chatId, 'You are already registered. Use /help to see available commands.');
+
+            return;
+        }
+
         $telegramUser = $state['data']['telegramUser'] ?? [];
         $telegramId   = (string) ($telegramUser['id'] ?? $chatId);
 
@@ -68,7 +79,7 @@ class RegisterConversation implements ConversationInterface
         $user = new User();
         $user->setName($name)
              ->setEmail("telegram_{$telegramId}@local")
-             ->setPassword('') // No web login for Telegram-only users
+             ->setPassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))))
              ->setTelegramChatId($chatId)
              ->setTelegramUsername($telegramUser['username'] ?? null)
              ->setFamily($family)
