@@ -1,0 +1,181 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Meter Readings — Family Finance Manager{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Meter Readings</h1>
+    <p class="text-sm text-gray-500 mt-1">Add readings via Telegram: <code class="bg-gray-100 px-1 rounded">/meter</code></p>
+</div>
+
+{# ───── Electricity ───── #}
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <span>⚡</span> Electricity (kWh)
+    </h2>
+
+    {% if electricityChart.labels is not empty %}
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+        <canvas id="electricityChart" height="120"></canvas>
+    </div>
+    {% endif %}
+
+    {% if electricityReadings is empty %}
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">No electricity readings yet.</div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reading (kWh)</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Consumption</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Photo</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for item in electricityReadings %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-700">{{ item.reading.readingDate|date('Y-m-d') }}</td>
+                    <td class="px-4 py-3 text-right font-mono font-medium text-gray-900">{{ item.reading.value|number_format(2) }}</td>
+                    <td class="px-4 py-3 text-right font-mono {% if item.consumption is not null %}text-blue-600{% else %}text-gray-300{% endif %}">
+                        {% if item.consumption is not null %}
+                            +{{ item.consumption|number_format(2) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ item.reading.notes ?? '' }}</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if item.reading.photoPath %}
+                            <a href="{{ path('meter_photo', {id: item.reading.id}) }}" target="_blank"
+                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">View</a>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <form method="post" action="{{ path('meter_delete', {id: item.reading.id}) }}"
+                              onsubmit="return confirm('Delete this reading?')">
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+{# ───── Water ───── #}
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <span>💧</span> Water (m³)
+    </h2>
+
+    {% if waterChart.labels is not empty %}
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+        <canvas id="waterChart" height="120"></canvas>
+    </div>
+    {% endif %}
+
+    {% if waterReadings is empty %}
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">No water readings yet.</div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reading (m³)</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Consumption</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Photo</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for item in waterReadings %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-700">{{ item.reading.readingDate|date('Y-m-d') }}</td>
+                    <td class="px-4 py-3 text-right font-mono font-medium text-gray-900">{{ item.reading.value|number_format(2) }}</td>
+                    <td class="px-4 py-3 text-right font-mono {% if item.consumption is not null %}text-cyan-600{% else %}text-gray-300{% endif %}">
+                        {% if item.consumption is not null %}
+                            +{{ item.consumption|number_format(2) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ item.reading.notes ?? '' }}</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if item.reading.photoPath %}
+                            <a href="{{ path('meter_photo', {id: item.reading.id}) }}" target="_blank"
+                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">View</a>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <form method="post" action="{{ path('meter_delete', {id: item.reading.id}) }}"
+                              onsubmit="return confirm('Delete this reading?')">
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+{% if electricityChart.labels is not empty %}
+new Chart(document.getElementById('electricityChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ electricityChart.labels|json_encode|raw }},
+        datasets: [{
+            label: 'Electricity consumption (kWh)',
+            data: {{ electricityChart.data|json_encode|raw }},
+            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+            borderColor: 'rgb(99, 102, 241)',
+            borderWidth: 1,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'kWh' } } }
+    }
+});
+{% endif %}
+
+{% if waterChart.labels is not empty %}
+new Chart(document.getElementById('waterChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ waterChart.labels|json_encode|raw }},
+        datasets: [{
+            label: 'Water consumption (m³)',
+            data: {{ waterChart.data|json_encode|raw }},
+            backgroundColor: 'rgba(6, 182, 212, 0.5)',
+            borderColor: 'rgb(6, 182, 212)',
+            borderWidth: 1,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

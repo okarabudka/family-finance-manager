@@ -41,6 +41,11 @@
                                   {{ app.request.attributes.get('_route') starts with 'category' ? 'bg-indigo-700 text-white' : '' }}">
                             Categories
                         </a>
+                        <a href="{{ path('meter_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
+                                  {{ app.request.attributes.get('_route') starts with 'meter' ? 'bg-indigo-700 text-white' : '' }}">
+                            Meters
+                        </a>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">

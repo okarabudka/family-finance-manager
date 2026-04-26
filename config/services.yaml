@@ -74,6 +74,7 @@ services:
                 transfer: '@App\Telegram\Handler\TransferCommandHandler'
                 budget:   '@App\Telegram\Handler\BudgetCommandHandler'
                 pending:  '@App\Telegram\Handler\PendingCommandHandler'
+                meter:    '@App\Telegram\Handler\MeterCommandHandler'
                 help:     '@App\Telegram\Handler\HelpCommandHandler'
 
     App\Telegram\ConversationRegistry:
@@ -84,3 +85,4 @@ services:
                 App\Telegram\Conversation\ImportConversation:      '@App\Telegram\Conversation\ImportConversation'
                 App\Telegram\Conversation\AddIncomeConversation:   '@App\Telegram\Conversation\AddIncomeConversation'
                 App\Telegram\Conversation\AddTransferConversation: '@App\Telegram\Conversation\AddTransferConversation'
+                App\Telegram\Conversation\AddMeterConversation:    '@App\Telegram\Conversation\AddMeterConversation'

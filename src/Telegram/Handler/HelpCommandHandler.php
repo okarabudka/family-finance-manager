@@ -35,6 +35,7 @@ class HelpCommandHandler implements CommandHandlerInterface
             . "/stats — Spending chart\n"
             . "/import — Import bank statement\n"
             . "/pending — Review pending imports\n"
+            . "/meter — Submit meter reading (electricity/water)\n"
             . "/help — Show this help";
 
         $this->sender->sendMessage($chatId, $text, parseMode: 'Markdown');
