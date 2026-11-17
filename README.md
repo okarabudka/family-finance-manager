@@ -43,7 +43,7 @@ A self-hosted family finance tracker with a Telegram bot as the primary interfac
 ## Quick Start (Docker)
 
 ```bash
-git clone https://github.com/akrbdk/family-finance-manager.git
+git clone https://github.com/okarabudka/family-finance-manager.git
 cd family-finance-manager
 
 # Copy and edit environment variables
@@ -445,7 +445,7 @@ ssh-copy-id deploy@your-server-ip
 ```bash
 ssh deploy@your-server-ip
 sudo mkdir -p /opt/family-finance && sudo chown deploy:deploy /opt/family-finance
-git clone https://github.com/akrbdk/family-finance-manager.git /opt/family-finance
+git clone https://github.com/okarabudka/family-finance-manager.git /opt/family-finance
 cd /opt/family-finance
 cp .env .env.local
 ```
