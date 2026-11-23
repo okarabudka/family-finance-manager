@@ -4,15 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Entity\Account;
-use App\Entity\Budget;
-use App\Entity\Category;
-use App\Entity\Family;
-use App\Entity\ImportFile;
-use App\Entity\ReminderTemplate;
-use App\Entity\SavingsGoal;
-use App\Entity\Transaction;
-use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
@@ -40,20 +31,20 @@ class AdminDashboardController extends AbstractDashboardController
         yield MenuItem::linkToUrl('← Back to App', 'fa fa-arrow-left', '/dashboard');
 
         yield MenuItem::section('Users & Families');
-        yield MenuItem::linkToCrud('Users', 'fa fa-users', User::class);
-        yield MenuItem::linkToCrud('Families', 'fa fa-house', Family::class);
+        yield MenuItem::linkTo(UserCrudController::class, 'Users', 'fa fa-users');
+        yield MenuItem::linkTo(FamilyCrudController::class, 'Families', 'fa fa-house');
 
         yield MenuItem::section('Finance');
-        yield MenuItem::linkToCrud('Accounts', 'fa fa-credit-card', Account::class);
-        yield MenuItem::linkToCrud('Categories', 'fa fa-tag', Category::class);
-        yield MenuItem::linkToCrud('Transactions', 'fa fa-exchange-alt', Transaction::class);
-        yield MenuItem::linkToCrud('Budgets', 'fa fa-chart-pie', Budget::class);
-        yield MenuItem::linkToCrud('Savings Goals', 'fa fa-piggy-bank', SavingsGoal::class);
+        yield MenuItem::linkTo(AccountCrudController::class, 'Accounts', 'fa fa-credit-card');
+        yield MenuItem::linkTo(CategoryCrudController::class, 'Categories', 'fa fa-tag');
+        yield MenuItem::linkTo(TransactionCrudController::class, 'Transactions', 'fa fa-exchange-alt');
+        yield MenuItem::linkTo(BudgetCrudController::class, 'Budgets', 'fa fa-chart-pie');
+        yield MenuItem::linkTo(SavingsGoalCrudController::class, 'Savings Goals', 'fa fa-piggy-bank');
 
         yield MenuItem::section('Import');
-        yield MenuItem::linkToCrud('Import Files', 'fa fa-file-import', ImportFile::class);
+        yield MenuItem::linkTo(ImportFileCrudController::class, 'Import Files', 'fa fa-file-import');
 
         yield MenuItem::section('Notifications');
-        yield MenuItem::linkToCrud('Reminders', 'fa fa-bell', ReminderTemplate::class);
+        yield MenuItem::linkTo(ReminderTemplateCrudController::class, 'Reminders', 'fa fa-bell');
     }
 }

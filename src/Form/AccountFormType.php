@@ -26,8 +26,8 @@ class AccountFormType extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'Account Name',
                 'constraints' => [
-                    new NotBlank(['message' => 'Please enter an account name.']),
-                    new Length(['max' => 100]),
+                    new NotBlank(message: 'Please enter an account name.'),
+                    new Length(max: 100),
                 ],
                 'attr' => ['placeholder' => 'e.g. Main Checking'],
             ])

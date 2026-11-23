@@ -23,7 +23,7 @@ class ProfileFormType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label'       => 'Name',
-                'constraints' => [new NotBlank(), new Length(['min' => 2, 'max' => 100])],
+                'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
                 'label'       => 'Email',
@@ -43,7 +43,7 @@ class ProfileFormType extends AbstractType
                 'first_options'   => ['label' => 'New Password', 'attr' => ['autocomplete' => 'new-password']],
                 'second_options'  => ['label' => 'Confirm New Password', 'attr' => ['autocomplete' => 'new-password']],
                 'invalid_message' => 'Passwords do not match.',
-                'constraints'     => [new Length(['min' => 6])],
+                'constraints'     => [new Length(min: 6)],
             ]);
     }
 

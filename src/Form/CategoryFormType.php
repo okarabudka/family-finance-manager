@@ -30,8 +30,8 @@ class CategoryFormType extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'Category Name',
                 'constraints' => [
-                    new NotBlank(['message' => 'Please enter a category name.']),
-                    new Length(['max' => 100]),
+                    new NotBlank(message: 'Please enter a category name.'),
+                    new Length(max: 100),
                 ],
                 'attr' => ['placeholder' => 'e.g. Groceries'],
             ])

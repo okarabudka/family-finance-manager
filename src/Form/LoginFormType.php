@@ -22,8 +22,8 @@ class LoginFormType extends AbstractType
             ->add('email', EmailType::class, [
                 'label' => 'E-mail',
                 'constraints' => [
-                    new NotBlank(['message' => 'Введите e-mail']),
-                    new Email(['message' => 'Некорректный e-mail']),
+                    new NotBlank(message: 'Введите e-mail'),
+                    new Email(message: 'Некорректный e-mail'),
                 ],
                 'attr' => [
                     'autocomplete' => 'email',
@@ -32,7 +32,7 @@ class LoginFormType extends AbstractType
             ->add('password', PasswordType::class, [
                 'label' => 'Пароль',
                 'constraints' => [
-                    new NotBlank(['message' => 'Введите пароль']),
+                    new NotBlank(message: 'Введите пароль'),
                 ],
                 'attr' => [
                     'autocomplete' => 'current-password',

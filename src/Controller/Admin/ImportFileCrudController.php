@@ -10,6 +10,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
@@ -38,7 +39,7 @@ class ImportFileCrudController extends AbstractCrudController
         yield AssociationField::new('account');
         yield TextField::new('originalFilename');
         yield TextField::new('format');
-        yield TextField::new('status');
+        yield ChoiceField::new('status');
         yield IntegerField::new('totalRows');
         yield IntegerField::new('importedRows');
         yield TextField::new('errorMessage')->hideOnIndex();

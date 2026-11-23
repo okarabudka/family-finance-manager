@@ -24,7 +24,7 @@ class NewUserFormType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label'       => 'Name',
-                'constraints' => [new NotBlank(), new Length(['min' => 2, 'max' => 100])],
+                'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
                 'label'       => 'Email',
@@ -36,7 +36,7 @@ class NewUserFormType extends AbstractType
                 'first_options'   => ['label' => 'Password', 'attr' => ['autocomplete' => 'new-password']],
                 'second_options'  => ['label' => 'Confirm Password', 'attr' => ['autocomplete' => 'new-password']],
                 'invalid_message' => 'Passwords do not match.',
-                'constraints'     => [new NotBlank(), new Length(['min' => 6])],
+                'constraints'     => [new NotBlank(), new Length(min: 6)],
             ])
             ->add('roles', ChoiceType::class, [
                 'label'    => 'Role',

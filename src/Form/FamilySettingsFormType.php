@@ -21,7 +21,7 @@ class FamilySettingsFormType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label'       => 'Family Name',
-                'constraints' => [new NotBlank(), new Length(['min' => 1, 'max' => 100])],
+                'constraints' => [new NotBlank(), new Length(min: 1, max: 100)],
             ])
             ->add('currency', ChoiceType::class, [
                 'label'   => 'Currency',
