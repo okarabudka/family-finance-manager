@@ -31,6 +31,26 @@ final class TransactionTest extends FunctionalTestCase
         self::assertSame('42.17', $transaction->getAmount());
     }
 
+    public function testEditKeepsTheBookingDate(): void
+    {
+        $user = $this->loginAsDemoUser();
+        $repository = static::getContainer()->get(TransactionRepository::class);
+        $transaction = $repository->findOneBy(['family' => $user->getFamily(), 'description' => 'Rent'], ['executedAt' => 'ASC']);
+        self::assertInstanceOf(Transaction::class, $transaction);
+        $date = $transaction->getExecutedAt()->format('Y-m-d');
+
+        $crawler = $this->client->request('GET', \sprintf('/transactions/%s/edit', $transaction->getId()));
+        $form = $crawler->filter('form')->form();
+        $form['transaction_form[amount]'] = '1200.00';
+        $this->client->submit($form);
+
+        self::assertResponseRedirects('/transactions');
+        $updated = $repository->find($transaction->getId());
+        self::assertInstanceOf(Transaction::class, $updated);
+        self::assertSame('1200.00', $updated->getAmount());
+        self::assertSame($date, $updated->getExecutedAt()->format('Y-m-d'));
+    }
+
     public function testInvalidAmountShowsTheFormAgain(): void
     {
         $this->loginAsDemoUser();

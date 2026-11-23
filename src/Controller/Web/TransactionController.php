@@ -8,6 +8,7 @@ use App\Domain\Transaction\TransactionService;
 use App\Entity\Transaction;
 use App\Entity\TransactionType;
 use App\Entity\User;
+use App\Form\Data\TransactionData;
 use App\Form\TransactionFormType;
 use App\Repository\TransactionRepository;
 use Knp\Component\Pager\PaginatorInterface;
@@ -36,10 +37,10 @@ class TransactionController extends AbstractController
         }
 
         $filters = array_filter([
-            'type'     => $request->query->get('type'),
-            'category' => $request->query->get('category'),
-            'from'     => $request->query->get('from'),
-            'to'       => $request->query->get('to'),
+            'type'     => $request->query->getString('type'),
+            'category' => $request->query->getString('category'),
+            'from'     => $request->query->getString('from'),
+            'to'       => $request->query->getString('to'),
         ]);
 
         $query = $repo->createListQuery($family, $filters);
@@ -65,46 +66,41 @@ class TransactionController extends AbstractController
             return $this->redirectToRoute('dashboard');
         }
 
-        $form = $this->createForm(TransactionFormType::class, null, ['family' => $family]);
+        $data = new TransactionData();
+        $form = $this->createForm(TransactionFormType::class, $data, ['family' => $family]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $type = $data['type'];
+            \assert(null !== $data->amount && null !== $data->account && null !== $data->executedAt, 'guaranteed by the form constraints');
+            $description = $data->description ?? '';
 
-            /** @var \DateTime|\DateTimeImmutable $executedAtRaw */
-            $executedAtRaw = $data['executedAt'];
-            $executedAt = $executedAtRaw instanceof \DateTimeImmutable
-                ? $executedAtRaw
-                : \DateTimeImmutable::createFromMutable($executedAtRaw);
-
-            match ($type) {
+            match ($data->type) {
                 TransactionType::Income => $transactionService->addIncome(
                     family: $family,
                     user: $user,
-                    amount: (string) $data['amount'],
-                    category: $data['category'],
-                    account: $data['account'],
-                    description: (string) ($data['description'] ?? ''),
-                    date: $executedAt,
+                    amount: $data->amount,
+                    category: $data->category,
+                    account: $data->account,
+                    description: $description,
+                    date: $data->executedAt,
                 ),
                 TransactionType::Transfer => $transactionService->addTransfer(
                     family: $family,
                     user: $user,
-                    amount: (string) $data['amount'],
-                    from: $data['account'],
-                    to: $data['targetAccount'] ?? $data['account'],
-                    description: (string) ($data['description'] ?? ''),
-                    date: $executedAt,
+                    amount: $data->amount,
+                    from: $data->account,
+                    to: $data->targetAccount ?? $data->account,
+                    description: $description,
+                    date: $data->executedAt,
                 ),
                 default => $transactionService->addExpense(
                     family: $family,
                     user: $user,
-                    amount: (string) $data['amount'],
-                    category: $data['category'],
-                    account: $data['account'],
-                    description: (string) ($data['description'] ?? ''),
-                    date: $executedAt,
+                    amount: $data->amount,
+                    category: $data->category,
+                    account: $data->account,
+                    description: $description,
+                    date: $data->executedAt,
                 ),
             };
 
@@ -133,32 +129,18 @@ class TransactionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $initialData = [
-            'type'        => $transaction->getType(),
-            'amount'      => $transaction->getAmount(),
-            'description' => $transaction->getDescription(),
-            'category'    => $transaction->getCategory(),
-            'account'     => $transaction->getSourceAccount() ?? $transaction->getTargetAccount(),
-            'executedAt'  => \DateTime::createFromImmutable($transaction->getExecutedAt()),
-        ];
-
-        $form = $this->createForm(TransactionFormType::class, $initialData, ['family' => $family]);
+        $data = TransactionData::fromTransaction($transaction);
+        $form = $this->createForm(TransactionFormType::class, $data, ['family' => $family]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-
-            /** @var \DateTime|\DateTimeImmutable $executedAtRaw */
-            $executedAtRaw = $data['executedAt'];
-            $executedAt = $executedAtRaw instanceof \DateTimeImmutable
-                ? $executedAtRaw
-                : \DateTimeImmutable::createFromMutable($executedAtRaw);
+            \assert(null !== $data->amount && null !== $data->executedAt, 'guaranteed by the form constraints');
 
             $transactionService->update($transaction, [
-                'amount'      => (string) $data['amount'],
-                'description' => $data['description'],
-                'category'    => $data['category'],
-                'executedAt'  => $executedAt,
+                'amount'      => $data->amount,
+                'description' => $data->description,
+                'category'    => $data->category,
+                'executedAt'  => $data->executedAt,
             ]);
 
             $this->addFlash('success', 'flash.transaction.updated');
@@ -187,7 +169,7 @@ class TransactionController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_transaction_' . $transaction->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete_transaction_' . $transaction->getId(), $request->request->getString('_token'))) {
             $transactionService->delete($transaction);
             $this->addFlash('success', 'flash.transaction.deleted');
         } else {
