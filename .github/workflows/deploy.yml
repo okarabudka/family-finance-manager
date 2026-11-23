@@ -1,40 +1,43 @@
+# Example deployment for a single Docker host. Runs only when triggered manually and
+# needs the repository secrets SSH_HOST, SSH_USER and SSH_KEY. Images go to GHCR.
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: pdo_pgsql, redis, intl, zip
-      - run: composer install --no-interaction
-      - run: php vendor/bin/phpstan analyse --no-progress
-      - run: php bin/phpunit
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    environment: production
     steps:
       - uses: actions/checkout@v4
-      - name: Build and push Docker image
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push images
         run: |
-          docker build -f docker/php/Dockerfile.prod -t ${{ secrets.REGISTRY }}/family-finance:${{ github.sha }} .
-          docker push ${{ secrets.REGISTRY }}/family-finance:${{ github.sha }}
-      - name: Deploy to server
+          docker build -f docker/php/Dockerfile --target prod -t "$IMAGE:${{ github.sha }}" .
+          docker build -f docker/php/Dockerfile --target nginx -t "$IMAGE-nginx:${{ github.sha }}" .
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE-nginx:${{ github.sha }}"
+      - name: Roll out
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /opt/family-finance
-            APP_IMAGE=${{ secrets.REGISTRY }}/family-finance:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction
-            docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:warmup
+            export APP_IMAGE=${{ env.IMAGE }}:${{ github.sha }} NGINX_IMAGE=${{ env.IMAGE }}-nginx:${{ github.sha }}
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml run --rm app php bin/console doctrine:migrations:migrate --no-interaction
+            docker compose -f docker-compose.prod.yml up -d --wait
