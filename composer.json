@@ -1,4 +1,6 @@
 {
+    "name": "okarabudka/family-finance-manager",
+    "description": "Self-hosted family finance tracker with a Telegram bot and a Symfony web dashboard",
     "type": "project",
     "license": "MIT",
     "minimum-stability": "stable",
