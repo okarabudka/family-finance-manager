@@ -52,6 +52,7 @@ class AccountServiceTest extends TestCase
             ->setFamily(new Family());
 
         $account->setInitialBalance((string) $initialBalance);
+        $this->setPrivateId($account, Uuid::v4());
 
         if (!$active) {
             $account->setIsActive(false);
