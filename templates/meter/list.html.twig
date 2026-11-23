@@ -16,7 +16,11 @@
 
     {% if electricityChart.labels is not empty %}
     <div class="bg-white rounded-lg shadow p-4 mb-4">
-        <canvas id="electricityChart" height="120"></canvas>
+        <canvas id="electricityChart" height="120" data-chart="{{ {
+            type: 'bar',
+            data: {labels: electricityChart.labels, datasets: [{label: 'Electricity consumption (kWh)', data: electricityChart.data, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgb(99, 102, 241)', borderWidth: 1}]},
+            options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, title: {display: true, text: 'kWh'}}}},
+        }|json_encode }}"></canvas>
     </div>
     {% endif %}
 
@@ -79,7 +83,11 @@
 
     {% if waterChart.labels is not empty %}
     <div class="bg-white rounded-lg shadow p-4 mb-4">
-        <canvas id="waterChart" height="120"></canvas>
+        <canvas id="waterChart" height="120" data-chart="{{ {
+            type: 'bar',
+            data: {labels: waterChart.labels, datasets: [{label: 'Water consumption (m³)', data: waterChart.data, backgroundColor: 'rgba(6, 182, 212, 0.5)', borderColor: 'rgb(6, 182, 212)', borderWidth: 1}]},
+            options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, title: {display: true, text: 'm³'}}}},
+        }|json_encode }}"></canvas>
     </div>
     {% endif %}
 
@@ -133,51 +141,4 @@
     </div>
     {% endif %}
 </div>
-{% endblock %}
-
-{% block javascripts %}
-{{ parent() }}
-<script>
-{% if electricityChart.labels is not empty %}
-new Chart(document.getElementById('electricityChart'), {
-    type: 'bar',
-    data: {
-        labels: {{ electricityChart.labels|json_encode|raw }},
-        datasets: [{
-            label: 'Electricity consumption (kWh)',
-            data: {{ electricityChart.data|json_encode|raw }},
-            backgroundColor: 'rgba(99, 102, 241, 0.5)',
-            borderColor: 'rgb(99, 102, 241)',
-            borderWidth: 1,
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, title: { display: true, text: 'kWh' } } }
-    }
-});
-{% endif %}
-
-{% if waterChart.labels is not empty %}
-new Chart(document.getElementById('waterChart'), {
-    type: 'bar',
-    data: {
-        labels: {{ waterChart.labels|json_encode|raw }},
-        datasets: [{
-            label: 'Water consumption (m³)',
-            data: {{ waterChart.data|json_encode|raw }},
-            backgroundColor: 'rgba(6, 182, 212, 0.5)',
-            borderColor: 'rgb(6, 182, 212)',
-            borderWidth: 1,
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
-    }
-});
-{% endif %}
-</script>
 {% endblock %}

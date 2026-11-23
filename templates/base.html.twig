@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Family Finance Manager{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     {% block stylesheets %}{% endblock %}
+    {% block importmap %}{{ importmap('app') }}{% endblock %}
 </head>
 <body class="h-full">
 
@@ -20,35 +20,49 @@
                     <a href="{{ path('dashboard') }}" class="text-white font-bold text-lg">
                         Family Finance
                     </a>
-                    <div class="hidden md:flex gap-4">
+                    <div class="hidden md:flex gap-1">
+                        {% set route = app.request.attributes.get('_route') ?? '' %}
                         <a href="{{ path('dashboard') }}"
-                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
-                                  {{ app.request.attributes.get('_route') starts with 'dashboard' ? 'bg-indigo-700 text-white' : '' }}">
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'dashboard' ? 'bg-indigo-700 text-white' : '' }}">
                             Dashboard
                         </a>
                         <a href="{{ path('transaction_list') }}"
-                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
-                                  {{ app.request.attributes.get('_route') starts with 'transaction' ? 'bg-indigo-700 text-white' : '' }}">
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'transaction' ? 'bg-indigo-700 text-white' : '' }}">
                             Transactions
                         </a>
                         <a href="{{ path('account_list') }}"
-                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
-                                  {{ app.request.attributes.get('_route') starts with 'account' ? 'bg-indigo-700 text-white' : '' }}">
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'account' ? 'bg-indigo-700 text-white' : '' }}">
                             Accounts
                         </a>
                         <a href="{{ path('category_list') }}"
-                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
-                                  {{ app.request.attributes.get('_route') starts with 'category' ? 'bg-indigo-700 text-white' : '' }}">
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'category' ? 'bg-indigo-700 text-white' : '' }}">
                             Categories
                         </a>
+                        <a href="{{ path('budget_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'budget' ? 'bg-indigo-700 text-white' : '' }}">
+                            Budgets
+                        </a>
+                        <a href="{{ path('savings_goal_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'savings_goal' ? 'bg-indigo-700 text-white' : '' }}">
+                            Savings
+                        </a>
                         <a href="{{ path('meter_list') }}"
-                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium
-                                  {{ app.request.attributes.get('_route') starts with 'meter' ? 'bg-indigo-700 text-white' : '' }}">
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'meter' ? 'bg-indigo-700 text-white' : '' }}">
                             Meters
+                        </a>
+                        <a href="{{ path('import_list') }}"
+                           class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'import' ? 'bg-indigo-700 text-white' : '' }}">
+                            Imports
                         </a>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('admin') }}"
+                       class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700">
+                        Admin
+                    </a>
+                    {% endif %}
                     <a href="{{ path('settings') }}"
                        class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700
                               {{ app.request.attributes.get('_route') starts with 'settings' ? 'bg-indigo-700 text-white' : '' }}">
