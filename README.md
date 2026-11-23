@@ -51,9 +51,9 @@ a gitleaks scan of the full history.
 | ![Transactions](docs/screenshots/transactions.png) | ![Budgets](docs/screenshots/budgets.png) |
 | Transactions with filters | Budgets per category and month |
 | ![Meter readings](docs/screenshots/meters.png) | ![Bank import](docs/screenshots/import.png) |
-| Meter readings with consumption charts | Imported bank statements |
-| ![Admin panel](docs/screenshots/admin.png) | |
-| EasyAdmin panel | |
+| Meter readings with consumption charts | Imported bank transactions waiting for review |
+| ![Admin panel](docs/screenshots/admin.png) | ![Telegram bot replies](docs/screenshots/bot.png) |
+| EasyAdmin panel | Telegram bot, replayed locally with `make bot-replay` |
 
 ## Tech stack
 
