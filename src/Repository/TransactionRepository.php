@@ -72,12 +72,13 @@ class TransactionRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    /** @return array<int, array{categoryId: string|null, total: string|null}> */
+    /** @return list<array{categoryId: string|null, total: string|null}> */
     public function sumByCategory(
         Family $family,
         \DateTimeImmutable $from,
         \DateTimeImmutable $to,
     ): array {
+        /** @var list<array{categoryId: string|null, total: string|null}> */
         return $this->createQueryBuilder('t')
             ->select('IDENTITY(t.category) as categoryId, SUM(t.amount) as total')
             ->where('t.family = :family')
@@ -135,7 +136,7 @@ class TransactionRepository extends ServiceEntityRepository
      * Returns category IDs that had regular transactions (present in at least $months distinct months
      * within the last $months months). Uses native SQL to avoid non-standard YEAR()/MONTH() DQL functions.
      *
-     * @return array<int, string>
+     * @return list<string>
      */
     public function findRegularCategories(Family $family, int $months = 3): array
     {
@@ -159,7 +160,7 @@ class TransactionRepository extends ServiceEntityRepository
             'months'   => $months,
         ])->fetchFirstColumn();
 
-        return array_values($rows);
+        return array_values(array_filter($rows, \is_string(...)));
     }
 
     /**
@@ -189,7 +190,7 @@ class TransactionRepository extends ServiceEntityRepository
     /**
      * Used in TransactionController for a filterable transaction list.
      *
-     * @param array<string, mixed> $filters
+     * @param array<string, string> $filters
      */
     public function createListQuery(Family $family, array $filters): QueryBuilder
     {
@@ -198,9 +199,10 @@ class TransactionRepository extends ServiceEntityRepository
             ->setParameter('family', $family)
             ->orderBy('t.executedAt', 'DESC');
 
-        if (!empty($filters['type'])) {
+        $type = TransactionType::tryFrom($filters['type'] ?? '');
+        if ($type !== null) {
             $qb->andWhere('t.type = :type')
-               ->setParameter('type', TransactionType::from($filters['type']));
+               ->setParameter('type', $type);
         }
         if (!empty($filters['category'])) {
             $qb->andWhere('IDENTITY(t.category) = :category')

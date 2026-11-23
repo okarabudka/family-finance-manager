@@ -53,7 +53,9 @@ class SparkasseCsvParser implements ImportParserInterface
         $transactions = [];
 
         foreach ($csv->getRecords() as $record) {
-            $amountStr = $record['Betrag'] ?? '';
+            $field = static fn (string $name): string => \is_string($record[$name] ?? null) ? $record[$name] : '';
+
+            $amountStr = $field('Betrag');
             if ($amountStr === '') {
                 continue;
             }
@@ -66,7 +68,7 @@ class SparkasseCsvParser implements ImportParserInterface
             );
 
             // Parse date: DD.MM.YY or DD.MM.YYYY
-            $dateStr = $record['Buchungstag'] ?? $record['Valutadatum'] ?? '';
+            $dateStr = $field('Buchungstag') ?: $field('Valutadatum');
             $date = \DateTime::createFromFormat('d.m.y', $dateStr)
                 ?: \DateTime::createFromFormat('d.m.Y', $dateStr);
 
@@ -77,8 +79,8 @@ class SparkasseCsvParser implements ImportParserInterface
             $transactions[] = [
                 'date'             => $date->format('Y-m-d'),
                 'amount'           => $amount,
-                'description'      => trim($record['Verwendungszweck'] ?? ''),
-                'counterpartyName' => trim($record['Auftraggeber / Beguenstigter'] ?? '') ?: null,
+                'description'      => trim($field('Verwendungszweck')),
+                'counterpartyName' => trim($field('Auftraggeber / Beguenstigter')) ?: null,
                 'counterpartyIban' => null, // Sparkasse CSV does not always include IBAN
             ];
         }

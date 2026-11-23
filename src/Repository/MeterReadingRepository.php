@@ -36,7 +36,7 @@ class MeterReadingRepository extends ServiceEntityRepository
 
     public function findLatestByFamilyAndType(Family $family, MeterType $type): ?MeterReading
     {
-        return $this->createQueryBuilder('mr')
+        $result = $this->createQueryBuilder('mr')
             ->where('mr.family = :family')
             ->andWhere('mr.type = :type')
             ->setParameter('family', $family)
@@ -46,5 +46,8 @@ class MeterReadingRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+        \assert(null === $result || $result instanceof MeterReading);
+
+        return $result;
     }
 }

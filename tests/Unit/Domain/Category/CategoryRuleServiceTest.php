@@ -9,11 +9,12 @@ use App\Entity\Category;
 use App\Entity\CategoryRule;
 use App\Entity\Family;
 use App\Repository\CategoryRuleRepository;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 class CategoryRuleServiceTest extends TestCase
 {
-    private CategoryRuleRepository $ruleRepo;
+    private CategoryRuleRepository&Stub $ruleRepo;
     private CategoryRuleService $service;
     private Family $family;
 
@@ -110,6 +111,7 @@ class CategoryRuleServiceTest extends TestCase
         return $category;
     }
 
+    /** @param list<string> $keywords */
     private function createRule(Category $category, array $keywords, ?string $iban): CategoryRule
     {
         $rule = new CategoryRule();

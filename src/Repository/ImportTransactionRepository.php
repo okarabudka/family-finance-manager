@@ -35,7 +35,7 @@ class ImportTransactionRepository extends ServiceEntityRepository
 
     public function findFirstPending(ImportFile $importFile): ?ImportTransaction
     {
-        return $this->createQueryBuilder('it')
+        $result = $this->createQueryBuilder('it')
             ->where('it.importFile = :importFile')
             ->andWhere('it.status = :status')
             ->setParameter('importFile', $importFile)
@@ -44,6 +44,9 @@ class ImportTransactionRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+        \assert(null === $result || $result instanceof ImportTransaction);
+
+        return $result;
     }
 
     public function countPending(ImportFile $importFile): int
@@ -64,7 +67,7 @@ class ImportTransactionRepository extends ServiceEntityRepository
      */
     public function findFirstPendingForFamily(Family $family): ?ImportTransaction
     {
-        return $this->createQueryBuilder('it')
+        $result = $this->createQueryBuilder('it')
             ->join('it.importFile', 'imf')
             ->join('imf.account', 'a')
             ->where('a.family = :family')
@@ -75,5 +78,8 @@ class ImportTransactionRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+        \assert(null === $result || $result instanceof ImportTransaction);
+
+        return $result;
     }
 }

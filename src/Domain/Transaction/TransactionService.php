@@ -123,7 +123,7 @@ class TransactionService
         return $transaction;
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array{amount?: string, description?: string|null, category?: Category|null, executedAt?: \DateTimeImmutable} $data */
     public function update(Transaction $transaction, array $data): Transaction
     {
         // Capture old date BEFORE updating — needed to clear old month's cache
@@ -184,7 +184,7 @@ class TransactionService
     /**
      * Matches the decimal(15, 2) column, so the entity holds the same value as the database.
      */
-    private static function normalizeAmount(mixed $amount): string
+    private static function normalizeAmount(string $amount): string
     {
         return number_format(abs((float) $amount), 2, '.', '');
     }

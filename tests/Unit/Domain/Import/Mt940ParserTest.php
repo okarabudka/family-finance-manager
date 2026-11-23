@@ -32,7 +32,7 @@ class Mt940ParserTest extends TestCase
         self::assertFalse($this->parser->supports('csv'));
     }
 
-    public function testParsesDebitTransaction(): void
+    public function testSkipsLinesWithoutDebitCreditMark(): void
     {
         // MT940 :61: format: YYMMDD[YYMMDD]CD[R][currency]amount TTTT reference
         // D = debit (expense), C = credit (income)
@@ -48,8 +48,7 @@ class Mt940ParserTest extends TestCase
 
         $result = $this->parser->parse($this->tmpFile);
 
-        // Parser extracts what it can; verify at least the file is processed
-        self::assertIsArray($result);
+        self::assertSame([], $result);
     }
 
     public function testParsesProperMt940DebitFormat(): void

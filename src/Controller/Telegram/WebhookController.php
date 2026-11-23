@@ -32,9 +32,11 @@ class WebhookController extends AbstractController
         }
 
         $update = json_decode($content, true);
-        if (empty($update) || !is_array($update)) {
+        if (empty($update) || !is_array($update) || array_is_list($update)) {
             return new Response('Bad Request', Response::HTTP_BAD_REQUEST);
         }
+
+        /** @var array<string, mixed> $update a JSON object decodes to string keys */
 
         $this->dispatcher->dispatch($update);
 
