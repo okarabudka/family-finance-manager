@@ -37,7 +37,7 @@ class TransactionCrudController extends AbstractCrudController
         yield IdField::new('id', 'admin.field.id')->hideOnForm();
         yield AssociationField::new('family', 'admin.field.family');
         yield ChoiceField::new('type', 'admin.field.type')->setChoices(TransactionType::cases());
-        yield MoneyField::new('amount', 'admin.field.amount')->setCurrency('EUR');
+        yield MoneyField::new('amount', 'admin.field.amount')->setCurrency('EUR')->setStoredAsCents(false);
         yield TextField::new('currency', 'admin.field.currency');
         yield DateField::new('executedAt', 'admin.field.executed_at');
         yield AssociationField::new('category', 'admin.field.category');

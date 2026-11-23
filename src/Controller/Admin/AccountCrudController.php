@@ -37,7 +37,7 @@ class AccountCrudController extends AbstractCrudController
         yield TextField::new('name', 'admin.field.name');
         yield ChoiceField::new('type', 'admin.field.type')->setChoices(AccountType::cases());
         yield TextField::new('currency', 'admin.field.currency');
-        yield MoneyField::new('initialBalance', 'admin.field.initial_balance')->setCurrency('EUR');
+        yield MoneyField::new('initialBalance', 'admin.field.initial_balance')->setCurrency('EUR')->setStoredAsCents(false);
         yield TextField::new('iban', 'admin.field.iban')->hideOnIndex();
         yield BooleanField::new('isActive', 'admin.field.is_active');
         yield BooleanField::new('includeInTotal', 'admin.field.include_in_total');

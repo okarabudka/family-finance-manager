@@ -37,7 +37,7 @@ class SavingsGoalCrudController extends AbstractCrudController
         yield AssociationField::new('family', 'admin.field.family');
         yield TextField::new('name', 'admin.field.name');
         yield AssociationField::new('account', 'admin.field.account');
-        yield MoneyField::new('targetAmount', 'admin.field.target_amount')->setCurrency('EUR')->hideOnIndex();
+        yield MoneyField::new('targetAmount', 'admin.field.target_amount')->setCurrency('EUR')->setStoredAsCents(false)->hideOnIndex();
         yield DateField::new('targetDate', 'admin.field.target_date')->hideOnIndex();
         yield ChoiceField::new('status', 'admin.field.status')->setChoices(SavingsGoalStatus::cases());
         yield TextField::new('description', 'admin.field.description')->hideOnIndex();

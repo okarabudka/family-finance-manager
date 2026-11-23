@@ -35,6 +35,6 @@ class BudgetCrudController extends AbstractCrudController
         yield AssociationField::new('category', 'admin.field.category');
         yield IntegerField::new('year', 'admin.field.year');
         yield IntegerField::new('month', 'admin.field.month');
-        yield MoneyField::new('plannedAmount', 'admin.field.planned_amount')->setCurrency('EUR');
+        yield MoneyField::new('plannedAmount', 'admin.field.planned_amount')->setCurrency('EUR')->setStoredAsCents(false);
     }
 }
