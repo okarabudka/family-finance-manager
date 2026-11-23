@@ -11,6 +11,7 @@ use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\ImportConversation;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class ImportCommandHandler implements CommandHandlerInterface
 {
@@ -19,6 +20,7 @@ class ImportCommandHandler implements CommandHandlerInterface
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
         private readonly AccountRepository $accountRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -27,14 +29,14 @@ class ImportCommandHandler implements CommandHandlerInterface
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             return;
         }
 
         $accounts = $this->accountRepo->findActiveByFamily($user->getFamily());
 
         if (empty($accounts)) {
-            $this->sender->sendMessage($chatId, 'No active accounts found. Please create an account first.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('import.no_accounts'));
             return;
         }
 
@@ -50,7 +52,7 @@ class ImportCommandHandler implements CommandHandlerInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "*Import bank statement*\n\nSelect the account this statement belongs to:",
+            $this->translator->trans('import.choose_account'),
             $keyboard,
             'Markdown',
         );

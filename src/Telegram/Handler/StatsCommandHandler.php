@@ -10,6 +10,7 @@ use App\Domain\Analytics\ChartGenerator;
 use App\Repository\UserRepository;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class StatsCommandHandler implements CommandHandlerInterface
 {
@@ -18,6 +19,7 @@ class StatsCommandHandler implements CommandHandlerInterface
         private readonly AnalyticsService $analyticsService,
         private readonly ChartGenerator $chartGenerator,
         private readonly TelegramSender $sender,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -26,7 +28,7 @@ class StatsCommandHandler implements CommandHandlerInterface
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             return;
         }
 
@@ -42,10 +44,7 @@ class StatsCommandHandler implements CommandHandlerInterface
         if (empty($report->byCategory)) {
             $this->sender->sendMessage(
                 $chatId,
-                sprintf(
-                    "*Stats — %s*\n\nNo expense data for this month yet.",
-                    $now->format('F Y'),
-                ),
+                $this->translator->trans('stats.empty', ['%month%' => $this->translator->monthLabel($now)]),
                 parseMode: 'Markdown',
             );
             return;
@@ -58,20 +57,16 @@ class StatsCommandHandler implements CommandHandlerInterface
         $chartPath = $this->chartGenerator->generatePieChart(
             $labels,
             $amounts,
-            'Expenses ' . $now->format('F Y'),
+            $this->translator->trans('report.chart_title', ['%month%' => $this->translator->monthLabel($now)]),
         );
 
         $currency = $family->getCurrency();
-        $caption  = sprintf(
-            "*Expenses by category — %s*\n\n"
-            . "Expenses: *%.2f %s*\n"
-            . "Income:   *%.2f %s*\n"
-            . "Saved:    *%.2f %s*",
-            $now->format('F Y'),
-            $report->totalExpenses, $currency,
-            $report->totalIncome,   $currency,
-            $report->balance,       $currency,
-        );
+        $caption  = $this->translator->trans('stats.caption', [
+            '%month%'    => $this->translator->monthLabel($now),
+            '%expenses%' => sprintf('%.2f %s', $report->totalExpenses, $currency),
+            '%income%'   => sprintf('%.2f %s', $report->totalIncome, $currency),
+            '%saved%'    => sprintf('%.2f %s', $report->balance, $currency),
+        ]);
 
         $this->sender->sendPhoto($chatId, $chartPath, $caption);
 

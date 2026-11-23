@@ -1,0 +1,139 @@
+common:
+    register_first: 'Please register first: /start'
+    transaction_not_found: 'Transaction not found.'
+    category_not_found: 'Category not found.'
+    choose_category: 'Choose a category:'
+    choose_category_from_list: 'Please choose a category from the list.'
+    choose_account: 'Choose an account:'
+    choose_account_from_list: 'Please choose an account from the list.'
+    invalid_amount: 'Invalid amount. Enter a number greater than 0:'
+    today: 'today'
+    ask_date: 'Enter the date (dd.mm.yyyy) or type "%today%":'
+    invalid_date: 'Invalid format. Enter the date as 25.03.2025 or "%today%":'
+    no_category: 'No category'
+    no_expense_data: 'No expense data for this month yet.'
+
+dispatcher:
+    cancelled: 'Action cancelled.'
+    nothing_to_cancel: 'Nothing to cancel.'
+    unknown_command: 'Unknown command. Use /help to see available commands.'
+
+start:
+    welcome_back: 'Welcome back, %name%!'
+    choose_action: 'Choose an action:'
+
+help:
+    text: "*Available commands:*\n\n/start — Register / welcome\n/balance — Show account balances\n/add — Add expense (or use quick input: \"50 groceries\")\n/income — Add income\n/transfer — Transfer between accounts\n/report — Monthly report\n/stats — Spending chart\n/import — Import bank statement\n/pending — Review pending imports\n/meter — Submit meter reading (electricity/water)\n/cancel — Cancel the current action\n/help — Show this help"
+
+register:
+    ask_name: 'Welcome! What is your name?'
+    name_too_short: 'Name is too short. Please try again:'
+    already_registered: 'You are already registered. Use /help to see available commands.'
+    family_name: "%name%'s family"
+    main_account: 'Main account'
+    cash_account: 'Cash'
+    done: "Done, %name%! Your account is created.\n\nDefault accounts:\n- %main_account%\n- %cash_account%\n\nTry adding your first expense:\n`50 groceries`"
+
+balance:
+    title: '*Current balance*'
+    total: '*Total*:'
+    account_type:
+        checking: 'Bank'
+        savings: 'Savings'
+        cash: 'Cash'
+        credit_card: 'Card'
+
+budget:
+    none: 'No budgets set for this month.'
+    title: '*Budget for %month%:*'
+
+quick_input:
+    not_understood: "Not understood. Enter an expense as:\n`50 groceries`\n`150.50 restaurant`\n\nOr use /help"
+    no_default_account: 'Please set a default account in the web interface before using quick input.'
+    no_category: 'No category (tap to assign)'
+    button_category: 'Category'
+    button_delete: 'Delete'
+    recorded: "Recorded!\n%amount%\n%category%"
+
+expense:
+    ask_amount: 'Enter the expense amount:'
+    ask_description: 'Enter a description (or type "-" to skip):'
+    account_not_found: 'Account not found. Please start over: /add'
+    recorded: "Expense recorded!\n\n%amount%\n%category%\n%date%"
+
+income:
+    ask_amount: 'Enter the income amount:'
+    account_not_found: 'Account not found. Please start over: /income'
+    recorded: "Income recorded!\n\n%amount%\n%category%\n%date%"
+
+transfer:
+    ask_amount: 'Enter the transfer amount:'
+    choose_from: 'Choose the source account (transfer from):'
+    choose_to: 'Choose the destination account (transfer to):'
+    source_not_found: 'Source account not found. Please start over: /transfer'
+    target_not_found: 'Destination account not found. Please start over: /transfer'
+    recorded: "Transfer recorded!\n\n%amount%\nFrom: %from%\nTo: %to%\n%date%"
+
+transaction:
+    deleted: 'Deleted: %amount%'
+    no_categories: 'No categories available. Add them in the web interface.'
+    category_set: 'Category set: %category%'
+
+report:
+    summary: "*Report for %month%*\n\nIncome:   *%income%*\nExpenses: *%expenses%*\nBalance:  *%balance%*"
+    by_category: '*By category:*'
+    button_chart: 'Chart'
+    button_details: 'Details'
+    chart_title: 'Expenses %month%'
+    chart_caption: 'Expenses by category — %month%'
+    details_title: '*Expense breakdown — %month%*'
+    planned: '%amount% planned'
+
+stats:
+    empty: "*Stats — %month%*\n\nNo expense data for this month yet."
+    caption: "*Expenses by category — %month%*\n\nExpenses: *%expenses%*\nIncome:   *%income%*\nSaved:    *%saved%*"
+
+meter:
+    choose_type: "*Meter reading*\n\nSelect the meter type:"
+    choose_type_from_buttons: 'Please select the meter type using the buttons.'
+    invalid_type: 'Invalid meter type. Please try again: /meter'
+    type:
+        electricity: 'Electricity'
+        water: 'Water'
+    last_reading: 'Last reading: *%value%* on %date%'
+    ask_value: 'Enter the meter value (%unit%):'
+    invalid_value: 'Invalid value. Please enter a positive number (e.g. 12345.67):'
+    skip: 'skip'
+    ask_photo: "Value *%value%* saved.\n\nNow send a photo of the meter (or type *%skip%* to skip):"
+    photo_or_skip: 'Please send a photo or type *%skip%*:'
+    photo_download_failed: 'Failed to download the photo, saving without it.'
+    photo_saved: '(photo saved)'
+    session_error: 'Session error. Please try again: /meter'
+    saved: "*%type%* reading saved%photo%!\n\nValue: *%value%*\nDate: %date%"
+
+pending:
+    none: 'No pending imports.'
+    all_processed: 'All transactions from the statement have been processed!'
+    transaction: "*Unrecognised transaction*\n\nDate: %date%\nAmount: %amount%\nDescription: %description%"
+    counterparty: 'Counterparty: %name%'
+    choose: 'Select a category or skip:'
+    button_skip: 'Skip'
+
+import:
+    no_accounts: 'No active accounts found. Please create an account first.'
+    choose_account: "*Import bank statement*\n\nSelect the account this statement belongs to:"
+    choose_account_from_buttons: 'Please select an account using the buttons provided.'
+    send_file: 'Please send the bank statement file (MT940 / .sta or Sparkasse CSV).'
+    send_as_attachment: 'Please send the bank statement as a file attachment (MT940 or CSV).'
+    download_failed: 'Failed to download the file. Please try again.'
+    unsupported_format: 'Unsupported file format. Please send an MT940 (.sta) or Sparkasse CSV file.'
+    account_not_found: 'Error: account not found. Please start again: /import'
+    file_received: "File received! Processing in the background...\n\nYou will be notified when the import is complete."
+    complete: "Import complete: *%file%*\n\nImported automatically: *%imported%*\nDuplicates skipped: *%skipped%*"
+    complete_pending: "Pending review: *%count%*\n\nUse /pending to review unrecognised transactions one by one."
+    complete_all_categorised: 'All transactions were categorised automatically.'
+    failed: "Import failed: *%file%*\n\nReason: %reason%"
+
+weekly:
+    all_good: 'All good! No warnings for this week.'
+    title: '*Weekly overview*'

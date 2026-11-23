@@ -1,0 +1,139 @@
+common:
+    register_first: 'Bitte registriere dich zuerst: /start'
+    transaction_not_found: 'Buchung nicht gefunden.'
+    category_not_found: 'Kategorie nicht gefunden.'
+    choose_category: 'Wähle eine Kategorie:'
+    choose_category_from_list: 'Bitte wähle eine Kategorie aus der Liste.'
+    choose_account: 'Wähle ein Konto:'
+    choose_account_from_list: 'Bitte wähle ein Konto aus der Liste.'
+    invalid_amount: 'Ungültiger Betrag. Gib eine Zahl größer als 0 ein:'
+    today: 'heute'
+    ask_date: 'Gib das Datum ein (tt.mm.jjjj) oder schreibe „%today%“:'
+    invalid_date: 'Ungültiges Format. Gib das Datum als 25.03.2025 oder „%today%“ ein:'
+    no_category: 'Ohne Kategorie'
+    no_expense_data: 'In diesem Monat gibt es noch keine Ausgaben.'
+
+dispatcher:
+    cancelled: 'Aktion abgebrochen.'
+    nothing_to_cancel: 'Es gibt nichts abzubrechen.'
+    unknown_command: 'Unbekannter Befehl. Mit /help siehst du alle Befehle.'
+
+start:
+    welcome_back: 'Willkommen zurück, %name%!'
+    choose_action: 'Wähle eine Aktion:'
+
+help:
+    text: "*Verfügbare Befehle:*\n\n/start — Registrierung / Begrüßung\n/balance — Kontostände anzeigen\n/add — Ausgabe erfassen (oder Schnelleingabe: \"50 Lebensmittel\")\n/income — Einnahme erfassen\n/transfer — Umbuchung zwischen Konten\n/report — Monatsbericht\n/stats — Ausgabendiagramm\n/import — Kontoauszug importieren\n/pending — Offene Importe prüfen\n/meter — Zählerstand erfassen (Strom/Wasser)\n/cancel — Aktuelle Aktion abbrechen\n/help — Diese Hilfe anzeigen"
+
+register:
+    ask_name: 'Willkommen! Wie heißt du?'
+    name_too_short: 'Der Name ist zu kurz. Bitte versuche es noch einmal:'
+    already_registered: 'Du bist bereits registriert. Mit /help siehst du alle Befehle.'
+    family_name: 'Familie %name%'
+    main_account: 'Hauptkonto'
+    cash_account: 'Bargeld'
+    done: "Fertig, %name%! Dein Konto ist angelegt.\n\nStandardkonten:\n- %main_account%\n- %cash_account%\n\nErfasse jetzt deine erste Ausgabe:\n`50 Lebensmittel`"
+
+balance:
+    title: '*Aktueller Kontostand*'
+    total: '*Gesamt*:'
+    account_type:
+        checking: 'Bank'
+        savings: 'Sparen'
+        cash: 'Bargeld'
+        credit_card: 'Karte'
+
+budget:
+    none: 'Für diesen Monat sind keine Budgets festgelegt.'
+    title: '*Budget für %month%:*'
+
+quick_input:
+    not_understood: "Nicht verstanden. Gib eine Ausgabe so ein:\n`50 Lebensmittel`\n`150.50 Restaurant`\n\nOder nutze /help"
+    no_default_account: 'Bitte lege in der Weboberfläche ein Standardkonto fest, bevor du die Schnelleingabe nutzt.'
+    no_category: 'Ohne Kategorie (tippen zum Zuordnen)'
+    button_category: 'Kategorie'
+    button_delete: 'Löschen'
+    recorded: "Gespeichert!\n%amount%\n%category%"
+
+expense:
+    ask_amount: 'Gib den Betrag der Ausgabe ein:'
+    ask_description: 'Gib eine Beschreibung ein (oder „-“ zum Überspringen):'
+    account_not_found: 'Konto nicht gefunden. Bitte beginne erneut: /add'
+    recorded: "Ausgabe gespeichert!\n\n%amount%\n%category%\n%date%"
+
+income:
+    ask_amount: 'Gib den Betrag der Einnahme ein:'
+    account_not_found: 'Konto nicht gefunden. Bitte beginne erneut: /income'
+    recorded: "Einnahme gespeichert!\n\n%amount%\n%category%\n%date%"
+
+transfer:
+    ask_amount: 'Gib den Betrag der Umbuchung ein:'
+    choose_from: 'Wähle das Quellkonto (von):'
+    choose_to: 'Wähle das Zielkonto (nach):'
+    source_not_found: 'Quellkonto nicht gefunden. Bitte beginne erneut: /transfer'
+    target_not_found: 'Zielkonto nicht gefunden. Bitte beginne erneut: /transfer'
+    recorded: "Umbuchung gespeichert!\n\n%amount%\nVon: %from%\nNach: %to%\n%date%"
+
+transaction:
+    deleted: 'Gelöscht: %amount%'
+    no_categories: 'Keine Kategorien vorhanden. Lege sie in der Weboberfläche an.'
+    category_set: 'Kategorie gesetzt: %category%'
+
+report:
+    summary: "*Bericht für %month%*\n\nEinnahmen: *%income%*\nAusgaben:  *%expenses%*\nSaldo:     *%balance%*"
+    by_category: '*Nach Kategorie:*'
+    button_chart: 'Diagramm'
+    button_details: 'Details'
+    chart_title: 'Ausgaben %month%'
+    chart_caption: 'Ausgaben nach Kategorie — %month%'
+    details_title: '*Ausgaben im Detail — %month%*'
+    planned: '%amount% geplant'
+
+stats:
+    empty: "*Statistik — %month%*\n\nIn diesem Monat gibt es noch keine Ausgaben."
+    caption: "*Ausgaben nach Kategorie — %month%*\n\nAusgaben:  *%expenses%*\nEinnahmen: *%income%*\nGespart:   *%saved%*"
+
+meter:
+    choose_type: "*Zählerstand*\n\nWähle die Zählerart:"
+    choose_type_from_buttons: 'Bitte wähle die Zählerart über die Schaltflächen.'
+    invalid_type: 'Unbekannte Zählerart. Bitte versuche es erneut: /meter'
+    type:
+        electricity: 'Strom'
+        water: 'Wasser'
+    last_reading: 'Letzter Stand: *%value%* am %date%'
+    ask_value: 'Gib den Zählerstand ein (%unit%):'
+    invalid_value: 'Ungültiger Wert. Bitte gib eine positive Zahl ein (z. B. 12345.67):'
+    skip: 'überspringen'
+    ask_photo: "Wert *%value%* gespeichert.\n\nSchicke jetzt ein Foto des Zählers (oder schreibe *%skip%*):"
+    photo_or_skip: 'Bitte schicke ein Foto oder schreibe *%skip%*:'
+    photo_download_failed: 'Das Foto konnte nicht geladen werden, ich speichere ohne Foto.'
+    photo_saved: '(Foto gespeichert)'
+    session_error: 'Sitzungsfehler. Bitte versuche es erneut: /meter'
+    saved: "Zählerstand *%type%* gespeichert%photo%!\n\nWert: *%value%*\nDatum: %date%"
+
+pending:
+    none: 'Keine offenen Importe.'
+    all_processed: 'Alle Buchungen aus dem Kontoauszug sind verarbeitet!'
+    transaction: "*Nicht erkannte Buchung*\n\nDatum: %date%\nBetrag: %amount%\nBeschreibung: %description%"
+    counterparty: 'Gegenpartei: %name%'
+    choose: 'Wähle eine Kategorie oder überspringe:'
+    button_skip: 'Überspringen'
+
+import:
+    no_accounts: 'Keine aktiven Konten gefunden. Bitte lege zuerst ein Konto an.'
+    choose_account: "*Kontoauszug importieren*\n\nWähle das Konto, zu dem dieser Auszug gehört:"
+    choose_account_from_buttons: 'Bitte wähle ein Konto über die Schaltflächen.'
+    send_file: 'Bitte schicke die Kontoauszugsdatei (MT940 / .sta oder Sparkasse-CSV).'
+    send_as_attachment: 'Bitte schicke den Kontoauszug als Dateianhang (MT940 oder CSV).'
+    download_failed: 'Die Datei konnte nicht geladen werden. Bitte versuche es erneut.'
+    unsupported_format: 'Nicht unterstütztes Dateiformat. Bitte schicke eine MT940-Datei (.sta) oder eine Sparkasse-CSV.'
+    account_not_found: 'Fehler: Konto nicht gefunden. Bitte beginne erneut: /import'
+    file_received: "Datei erhalten! Sie wird im Hintergrund verarbeitet...\n\nDu bekommst eine Nachricht, sobald der Import abgeschlossen ist."
+    complete: "Import abgeschlossen: *%file%*\n\nAutomatisch importiert: *%imported%*\nDuplikate übersprungen: *%skipped%*"
+    complete_pending: "Zu prüfen: *%count%*\n\nMit /pending gehst du die nicht erkannten Buchungen einzeln durch."
+    complete_all_categorised: 'Alle Buchungen wurden automatisch kategorisiert.'
+    failed: "Import fehlgeschlagen: *%file%*\n\nGrund: %reason%"
+
+weekly:
+    all_good: 'Alles in Ordnung! Diese Woche gibt es keine Warnungen.'
+    title: '*Wochenüberblick*'

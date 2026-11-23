@@ -9,6 +9,7 @@ use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\RegisterConversation;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class StartCommandHandler implements CommandHandlerInterface
 {
@@ -16,6 +17,7 @@ class StartCommandHandler implements CommandHandlerInterface
         private readonly UserRepository $userRepo,
         private readonly TelegramSender $sender,
         private readonly ConversationManager $conversationManager,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -25,7 +27,7 @@ class StartCommandHandler implements CommandHandlerInterface
         $user         = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user !== null) {
-            $this->sender->sendMessage($chatId, "Welcome back, {$user->getName()}!");
+            $this->sender->sendMessage($chatId, $this->translator->trans('start.welcome_back', ['%name%' => $user->getName()]));
             $this->sendMainMenu($chatId);
 
             return;
@@ -54,7 +56,7 @@ class StartCommandHandler implements CommandHandlerInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "Choose an action:",
+            $this->translator->trans('start.choose_action'),
             $keyboard,
         );
     }

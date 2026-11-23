@@ -10,6 +10,7 @@ use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class AddTransferConversation implements ConversationInterface
 {
@@ -19,6 +20,7 @@ class AddTransferConversation implements ConversationInterface
         private readonly AccountRepository $accountRepo,
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -44,7 +46,7 @@ class AddTransferConversation implements ConversationInterface
     /** @param array<string, mixed> $state */
     private function askAmount(int $chatId, array $state): void
     {
-        $this->sender->sendMessage($chatId, 'Enter the transfer amount:');
+        $this->sender->sendMessage($chatId, $this->translator->trans('transfer.ask_amount'));
         $state['step'] = 1;
         $this->conversationManager->updateState($chatId, $state);
     }
@@ -55,7 +57,7 @@ class AddTransferConversation implements ConversationInterface
         $amount = (float) str_replace(',', '.', trim($text));
 
         if ($amount <= 0.0) {
-            $this->sender->sendMessage($chatId, 'Invalid amount. Enter a number greater than 0:');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.invalid_amount'));
 
             return;
         }
@@ -66,7 +68,7 @@ class AddTransferConversation implements ConversationInterface
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -74,14 +76,14 @@ class AddTransferConversation implements ConversationInterface
 
         $accounts = $this->accountRepo->findActiveByFamily($user->getFamily());
         $keyboard = $this->buildAccountKeyboard($accounts, 'from_account');
-        $this->sender->sendMessage($chatId, 'Choose the source account (transfer from):', $keyboard);
+        $this->sender->sendMessage($chatId, $this->translator->trans('transfer.choose_from'), $keyboard);
     }
 
     /** @param array<string, mixed> $state */
     private function handleFromAccount(int $chatId, ?string $callbackData, array $state): void
     {
         if ($callbackData === null || !str_starts_with($callbackData, 'from_account:')) {
-            $this->sender->sendMessage($chatId, 'Please choose an account from the list.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_account_from_list'));
 
             return;
         }
@@ -93,7 +95,7 @@ class AddTransferConversation implements ConversationInterface
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -101,14 +103,14 @@ class AddTransferConversation implements ConversationInterface
 
         $accounts = $this->accountRepo->findActiveByFamily($user->getFamily());
         $keyboard = $this->buildAccountKeyboard($accounts, 'to_account');
-        $this->sender->sendMessage($chatId, 'Choose the destination account (transfer to):', $keyboard);
+        $this->sender->sendMessage($chatId, $this->translator->trans('transfer.choose_to'), $keyboard);
     }
 
     /** @param array<string, mixed> $state */
     private function handleToAccount(int $chatId, ?string $callbackData, array $state): void
     {
         if ($callbackData === null || !str_starts_with($callbackData, 'to_account:')) {
-            $this->sender->sendMessage($chatId, 'Please choose an account from the list.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_account_from_list'));
 
             return;
         }
@@ -126,7 +128,7 @@ class AddTransferConversation implements ConversationInterface
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -136,7 +138,7 @@ class AddTransferConversation implements ConversationInterface
 
         $fromAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['fromAccountId']);
         if ($fromAccount === null) {
-            $this->sender->sendMessage($chatId, 'Source account not found. Please start over: /transfer');
+            $this->sender->sendMessage($chatId, $this->translator->trans('transfer.source_not_found'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -144,7 +146,7 @@ class AddTransferConversation implements ConversationInterface
 
         $toAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['toAccountId']);
         if ($toAccount === null) {
-            $this->sender->sendMessage($chatId, 'Destination account not found. Please start over: /transfer');
+            $this->sender->sendMessage($chatId, $this->translator->trans('transfer.target_not_found'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -165,11 +167,12 @@ class AddTransferConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "Transfer recorded!\n\n"
-            . "{$amountFormatted} {$transaction->getCurrency()}\n"
-            . "From: {$fromAccount->getName()}\n"
-            . "To: {$toAccount->getName()}\n"
-            . $transaction->getExecutedAt()->format('d.m.Y'),
+            $this->translator->trans('transfer.recorded', [
+                '%amount%' => "{$amountFormatted} {$transaction->getCurrency()}",
+                '%from%'   => $fromAccount->getName(),
+                '%to%'     => $toAccount->getName(),
+                '%date%'   => $transaction->getExecutedAt()->format('d.m.Y'),
+            ]),
         );
     }
 

@@ -14,6 +14,7 @@ use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use App\Telegram\BotTranslator;
 
 class RegisterConversation implements ConversationInterface
 {
@@ -23,6 +24,7 @@ class RegisterConversation implements ConversationInterface
         private readonly TelegramSender $sender,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly UserRepository $userRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -44,7 +46,7 @@ class RegisterConversation implements ConversationInterface
     /** @param array<string, mixed> $state */
     private function askName(int $chatId, array $state): void
     {
-        $this->sender->sendMessage($chatId, 'Welcome! What is your name?');
+        $this->sender->sendMessage($chatId, $this->translator->trans('register.ask_name'));
         $state['step'] = 1;
         $this->conversationManager->updateState($chatId, $state);
     }
@@ -55,14 +57,14 @@ class RegisterConversation implements ConversationInterface
         $name = trim($text);
 
         if (mb_strlen($name) < 2) {
-            $this->sender->sendMessage($chatId, 'Name is too short. Please try again:');
+            $this->sender->sendMessage($chatId, $this->translator->trans('register.name_too_short'));
 
             return;
         }
 
         if ($this->userRepo->findByTelegramChatId($chatId) !== null) {
             $this->conversationManager->end($chatId);
-            $this->sender->sendMessage($chatId, 'You are already registered. Use /help to see available commands.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('register.already_registered'));
 
             return;
         }
@@ -72,7 +74,7 @@ class RegisterConversation implements ConversationInterface
 
         // Create a family
         $family = new Family();
-        $family->setName("{$name}'s Family")->setCurrency('EUR');
+        $family->setName($this->translator->trans('register.family_name', ['%name%' => $name]))->setCurrency('EUR');
         $this->em->persist($family);
 
         // Create the user
@@ -87,13 +89,13 @@ class RegisterConversation implements ConversationInterface
 
         // Create default accounts
         $bankAccount = (new Account())
-            ->setName('Main Account')
+            ->setName($this->translator->trans('register.main_account'))
             ->setType(AccountType::Checking)
             ->setFamily($family)
             ->setIsDefault(true);
 
         $cashAccount = (new Account())
-            ->setName('Cash')
+            ->setName($this->translator->trans('register.cash_account'))
             ->setType(AccountType::Cash)
             ->setFamily($family);
 
@@ -106,9 +108,11 @@ class RegisterConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "Done, {$name}! Your account is created.\n\n"
-            . "Default accounts:\n- Main Account\n- Cash\n\n"
-            . "Try adding your first expense:\n`50 groceries`",
+            $this->translator->trans('register.done', [
+                '%name%'         => $name,
+                '%main_account%' => $bankAccount->getName(),
+                '%cash_account%' => $cashAccount->getName(),
+            ]),
             parseMode: 'Markdown',
         );
     }

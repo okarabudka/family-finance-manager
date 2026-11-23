@@ -12,6 +12,7 @@ use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramFileDownloader;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class AddMeterConversation implements ConversationInterface
 {
@@ -22,6 +23,7 @@ class AddMeterConversation implements ConversationInterface
         private readonly MeterService $meterService,
         private readonly MeterReadingRepository $meterReadingRepository,
         private readonly UserRepository $userRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -49,7 +51,7 @@ class AddMeterConversation implements ConversationInterface
         $callbackData = $update['callback_query']['data'] ?? null;
 
         if ($callbackData === null || !str_starts_with($callbackData, 'meter:type:')) {
-            $this->sender->sendMessage($chatId, 'Please select meter type using the buttons.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.choose_type_from_buttons'));
             return;
         }
 
@@ -57,7 +59,7 @@ class AddMeterConversation implements ConversationInterface
         $type      = MeterType::tryFrom($typeValue);
 
         if ($type === null) {
-            $this->sender->sendMessage($chatId, 'Invalid meter type. Please try again: /meter');
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.invalid_type'));
             $this->conversationManager->end($chatId);
             return;
         }
@@ -73,18 +75,16 @@ class AddMeterConversation implements ConversationInterface
         if ($family !== null) {
             $latest = $this->meterReadingRepository->findLatestByFamilyAndType($family, $type);
             if ($latest !== null) {
-                $hint = sprintf(
-                    "\n\nLast reading: *%.2f %s* on %s",
-                    $latest->getValue(),
-                    $type->unit(),
-                    $latest->getReadingDate()->format('Y-m-d'),
-                );
+                $hint = "\n\n".$this->translator->trans('meter.last_reading', [
+                    '%value%' => sprintf('%.2f %s', $latest->getValue(), $type->unit()),
+                    '%date%'  => $latest->getReadingDate()->format('d.m.Y'),
+                ]);
             }
         }
 
         $this->sender->sendMessage(
             $chatId,
-            sprintf("*%s %s*%s\n\nEnter meter value (%s):", $type->emoji(), $type->label(), $hint, $type->unit()),
+            sprintf('*%s %s*%s', $type->emoji(), $this->translator->trans('meter.type.'.$type->value), $hint)."\n\n".$this->translator->trans('meter.ask_value', ['%unit%' => $type->unit()]),
             parseMode: 'Markdown',
         );
     }
@@ -100,7 +100,7 @@ class AddMeterConversation implements ConversationInterface
         $value = filter_var(str_replace(',', '.', $text), FILTER_VALIDATE_FLOAT);
 
         if ($value === false || $value < 0) {
-            $this->sender->sendMessage($chatId, 'Invalid value. Please enter a positive number (e.g. 12345.67):');
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.invalid_value'));
             return;
         }
 
@@ -110,7 +110,7 @@ class AddMeterConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "Value *" . number_format($value, 2) . "* saved.\n\nNow send a photo of the meter (or type *skip* to skip):",
+            $this->translator->trans('meter.ask_photo', ['%value%' => number_format($value, 2), '%skip%' => $this->translator->trans('meter.skip')]),
             parseMode: 'Markdown',
         );
     }
@@ -121,15 +121,15 @@ class AddMeterConversation implements ConversationInterface
      */
     private function handlePhotoInput(int $chatId, array $update, array $state): void
     {
-        $text      = strtolower(trim($update['message']['text'] ?? ''));
+        $text      = mb_strtolower(trim($update['message']['text'] ?? ''));
         $photos    = $update['message']['photo'] ?? [];
         $photoPath = null;
 
         $hasPhoto = !empty($photos);
-        $isSkip   = $text === 'skip';
+        $isSkip   = \in_array($text, ['skip', mb_strtolower($this->translator->trans('meter.skip'))], true);
 
         if (!$hasPhoto && !$isSkip) {
-            $this->sender->sendMessage($chatId, 'Please send a photo or type *skip*:', parseMode: 'Markdown');
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.photo_or_skip', ['%skip%' => $this->translator->trans('meter.skip')]), parseMode: 'Markdown');
             return;
         }
 
@@ -140,7 +140,7 @@ class AddMeterConversation implements ConversationInterface
             $photoPath    = $this->telegramFileDownloader->download($fileId, 'meters');
 
             if ($photoPath === null) {
-                $this->sender->sendMessage($chatId, 'Failed to download photo, saving without it.');
+                $this->sender->sendMessage($chatId, $this->translator->trans('meter.photo_download_failed'));
             }
         }
 
@@ -153,7 +153,7 @@ class AddMeterConversation implements ConversationInterface
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Session error. Please try again: /meter');
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.session_error'));
             $this->conversationManager->end($chatId);
             return;
         }
@@ -172,18 +172,15 @@ class AddMeterConversation implements ConversationInterface
 
         $this->conversationManager->end($chatId);
 
-        $photoText = $photoPath !== null ? ' (photo saved)' : '';
+        $photoText = $photoPath !== null ? ' '.$this->translator->trans('meter.photo_saved') : '';
         $this->sender->sendMessage(
             $chatId,
-            sprintf(
-                "%s *%s* reading saved%s!\n\nValue: *%.2f %s*\nDate: %s",
-                $type->emoji(),
-                $type->label(),
-                $photoText,
-                $value,
-                $type->unit(),
-                $reading->getReadingDate()->format('Y-m-d'),
-            ),
+            $type->emoji().' '.$this->translator->trans('meter.saved', [
+                '%type%'  => $this->translator->trans('meter.type.'.$type->value),
+                '%photo%' => $photoText,
+                '%value%' => sprintf('%.2f %s', $value, $type->unit()),
+                '%date%'  => $reading->getReadingDate()->format('d.m.Y'),
+            ]),
             parseMode: 'Markdown',
         );
     }

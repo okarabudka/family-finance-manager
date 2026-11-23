@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Telegram\Handler;
 
 use App\Domain\Account\AccountService;
-use App\Entity\AccountType;
 use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class BalanceCommandHandler implements CommandHandlerInterface
 {
@@ -18,6 +18,7 @@ class BalanceCommandHandler implements CommandHandlerInterface
         private readonly AccountRepository $accountRepo,
         private readonly AccountService $accountService,
         private readonly TelegramSender $sender,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -25,7 +26,7 @@ class BalanceCommandHandler implements CommandHandlerInterface
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
@@ -33,22 +34,17 @@ class BalanceCommandHandler implements CommandHandlerInterface
         $family   = $user->getFamily();
         $accounts = $this->accountRepo->findActiveByFamily($family);
 
-        $text = "*Current Balance*\n\n";
+        $text = $this->translator->trans('balance.title')."\n\n";
 
         foreach ($accounts as $account) {
             $balance = $this->accountService->getBalance($account);
-            $icon    = match ($account->getType()) {
-                AccountType::Checking   => 'Bank',
-                AccountType::Savings    => 'Savings',
-                AccountType::Cash       => 'Cash',
-                AccountType::CreditCard => 'Card',
-            };
+            $icon    = $this->translator->trans('balance.account_type.'.$account->getType()->value);
             $balanceFormatted = number_format($balance, 2, '.', ' ');
             $text .= "{$icon} *{$account->getName()}*: {$balanceFormatted} {$account->getCurrency()}\n";
         }
 
         $totals = $this->accountService->getTotalBalance($family);
-        $text .= "\n*Total*: ";
+        $text .= "\n".$this->translator->trans('balance.total').' ';
 
         foreach ($totals as $currency => $total) {
             $totalFormatted = number_format((float) $total, 2, '.', ' ');

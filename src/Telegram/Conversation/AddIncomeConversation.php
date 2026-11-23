@@ -12,6 +12,7 @@ use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class AddIncomeConversation implements ConversationInterface
 {
@@ -22,6 +23,7 @@ class AddIncomeConversation implements ConversationInterface
         private readonly AccountRepository $accountRepo,
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -47,7 +49,7 @@ class AddIncomeConversation implements ConversationInterface
     /** @param array<string, mixed> $state */
     private function askAmount(int $chatId, array $state): void
     {
-        $this->sender->sendMessage($chatId, 'Enter the income amount:');
+        $this->sender->sendMessage($chatId, $this->translator->trans('income.ask_amount'));
         $state['step'] = 1;
         $this->conversationManager->updateState($chatId, $state);
     }
@@ -58,7 +60,7 @@ class AddIncomeConversation implements ConversationInterface
         $amount = (float) str_replace(',', '.', trim($text));
 
         if ($amount <= 0.0) {
-            $this->sender->sendMessage($chatId, 'Invalid amount. Enter a number greater than 0:');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.invalid_amount'));
 
             return;
         }
@@ -69,7 +71,7 @@ class AddIncomeConversation implements ConversationInterface
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -78,14 +80,14 @@ class AddIncomeConversation implements ConversationInterface
         $categories = $this->categoryRepo->findByFamily($user->getFamily(), CategoryType::Income);
 
         $keyboard = $this->buildCategoryKeyboard($categories);
-        $this->sender->sendMessage($chatId, 'Choose a category:', $keyboard);
+        $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_category'), $keyboard);
     }
 
     /** @param array<string, mixed> $state */
     private function handleCategory(int $chatId, ?string $callbackData, array $state): void
     {
         if ($callbackData === null || !str_starts_with($callbackData, 'category:')) {
-            $this->sender->sendMessage($chatId, 'Please choose a category from the list.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_category_from_list'));
 
             return;
         }
@@ -97,7 +99,7 @@ class AddIncomeConversation implements ConversationInterface
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -105,14 +107,14 @@ class AddIncomeConversation implements ConversationInterface
 
         $accounts = $this->accountRepo->findActiveByFamily($user->getFamily());
         $keyboard = $this->buildAccountKeyboard($accounts);
-        $this->sender->sendMessage($chatId, 'Choose an account:', $keyboard);
+        $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_account'), $keyboard);
     }
 
     /** @param array<string, mixed> $state */
     private function handleAccount(int $chatId, ?string $callbackData, array $state): void
     {
         if ($callbackData === null || !str_starts_with($callbackData, 'account:')) {
-            $this->sender->sendMessage($chatId, 'Please choose an account from the list.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_account_from_list'));
 
             return;
         }
@@ -124,7 +126,7 @@ class AddIncomeConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            'Enter the date (dd.mm.yyyy) or type "today":',
+            $this->translator->trans('common.ask_date', ['%today%' => $this->translator->trans('common.today')]),
         );
     }
 
@@ -133,14 +135,14 @@ class AddIncomeConversation implements ConversationInterface
     {
         $trimmed = trim($text);
 
-        if (mb_strtolower($trimmed) === 'today' || $trimmed === '') {
+        if ($trimmed === '' || \in_array(mb_strtolower($trimmed), ['today', mb_strtolower($this->translator->trans('common.today'))], true)) {
             $date = new \DateTimeImmutable();
         } else {
             $date = \DateTimeImmutable::createFromFormat('d.m.Y', $trimmed);
             if ($date === false) {
                 $this->sender->sendMessage(
                     $chatId,
-                    'Invalid format. Enter the date as 25.03.2025 or "today":',
+                    $this->translator->trans('common.invalid_date', ['%today%' => $this->translator->trans('common.today')]),
                 );
 
                 return;
@@ -158,7 +160,7 @@ class AddIncomeConversation implements ConversationInterface
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -172,7 +174,7 @@ class AddIncomeConversation implements ConversationInterface
 
         $account = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['accountId']);
         if ($account === null) {
-            $this->sender->sendMessage($chatId, 'Account not found. Please start over: /income');
+            $this->sender->sendMessage($chatId, $this->translator->trans('income.account_not_found'));
             $this->conversationManager->end($chatId);
 
             return;
@@ -190,15 +192,16 @@ class AddIncomeConversation implements ConversationInterface
 
         $this->conversationManager->end($chatId);
 
-        $categoryName    = $transaction->getCategory()?->getName() ?? 'No category';
+        $categoryName    = $transaction->getCategory()?->getName() ?? $this->translator->trans('common.no_category');
         $amountFormatted = number_format((float) $transaction->getAmount(), 2, '.', ' ');
 
         $this->sender->sendMessage(
             $chatId,
-            "Income recorded!\n\n"
-            . "{$amountFormatted} {$transaction->getCurrency()}\n"
-            . "{$categoryName}\n"
-            . $transaction->getExecutedAt()->format('d.m.Y'),
+            $this->translator->trans('income.recorded', [
+                '%amount%'   => "{$amountFormatted} {$transaction->getCurrency()}",
+                '%category%' => $categoryName,
+                '%date%'     => $transaction->getExecutedAt()->format('d.m.Y'),
+            ]),
         );
     }
 

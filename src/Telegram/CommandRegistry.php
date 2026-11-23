@@ -15,6 +15,7 @@ class CommandRegistry
         private readonly array $handlers,
         private readonly TelegramSender $sender,
         private readonly LoggerInterface $logger,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -27,7 +28,7 @@ class CommandRegistry
 
         if ($handler === null) {
             $this->logger->info('Unknown Telegram command', ['command' => $command, 'chatId' => $chatId]);
-            $this->sender->sendMessage($chatId, "Unknown command. Use /help to see available commands.");
+            $this->sender->sendMessage($chatId, $this->translator->trans('dispatcher.unknown_command'));
 
             return;
         }

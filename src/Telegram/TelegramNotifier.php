@@ -13,6 +13,7 @@ class TelegramNotifier
     public function __construct(
         private readonly TelegramSender $sender,
         private readonly LoggerInterface $logger,
+        private readonly BotTranslator $translator,
     ) {}
 
     public function notifyImportComplete(ImportFile $importFile, int $pendingCount): void
@@ -30,15 +31,16 @@ class TelegramNotifier
         $imported = $importFile->getImportedRows();
         $skipped  = $importFile->getSkippedRows();
 
-        $text = "Import complete: *{$importFile->getOriginalFilename()}*\n\n"
-            . "Imported automatically: *{$imported}*\n"
-            . "Duplicates skipped: *{$skipped}*\n";
+        $text = $this->translator->trans('import.complete', [
+            '%file%'     => $importFile->getOriginalFilename(),
+            '%imported%' => $imported,
+            '%skipped%'  => $skipped,
+        ])."\n";
 
         if ($pendingCount > 0) {
-            $text .= "Pending review: *{$pendingCount}*\n\n"
-                . "Use /pending to review unrecognised transactions one by one.";
+            $text .= $this->translator->trans('import.complete_pending', ['%count%' => $pendingCount]);
         } else {
-            $text .= "\nAll transactions were categorised automatically.";
+            $text .= "\n".$this->translator->trans('import.complete_all_categorised');
         }
 
         $this->sender->sendMessage($chatId, $text, parseMode: 'Markdown');
@@ -55,7 +57,7 @@ class TelegramNotifier
 
         $this->sender->sendMessage(
             $chatId,
-            "Import failed: *{$importFile->getOriginalFilename()}*\n\nReason: {$reason}",
+            $this->translator->trans('import.failed', ['%file%' => $importFile->getOriginalFilename(), '%reason%' => $reason]),
             parseMode: 'Markdown',
         );
     }

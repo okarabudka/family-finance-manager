@@ -12,6 +12,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use App\Telegram\BotTranslator;
 
 #[AsCommand(
     name: 'app:report:weekly',
@@ -24,6 +25,7 @@ class WeeklyReportCommand extends Command
         private readonly SuggestionService $suggestionService,
         private readonly TelegramSender $sender,
         private readonly LoggerInterface $logger,
+        private readonly BotTranslator $translator,
     ) {
         parent::__construct();
     }
@@ -53,10 +55,10 @@ class WeeklyReportCommand extends Command
                 if (empty($suggestions)) {
                     $this->sender->sendMessage(
                         $chatId,
-                        'All good! No warnings for this week.',
+                        $this->translator->trans('weekly.all_good'),
                     );
                 } else {
-                    $text = "*Weekly overview*\n\n";
+                    $text = $this->translator->trans('weekly.title')."\n\n";
                     foreach (array_slice($suggestions, 0, 3) as $suggestion) {
                         $text .= "- *{$suggestion->title}*: {$suggestion->message}\n\n";
                     }

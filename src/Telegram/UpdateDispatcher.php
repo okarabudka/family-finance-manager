@@ -21,13 +21,14 @@ class UpdateDispatcher
         private readonly PendingImportHandler $pendingImportHandler,
         private readonly TransactionCallbackHandler $transactionCallbackHandler,
         private readonly ReportCommandHandler $reportCommandHandler,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
     public function dispatch(array $update): void
     {
         try {
-            $this->doDispatch($update);
+            $this->translator->inLanguage($this->extractLanguageCode($update), fn () => $this->doDispatch($update));
         } catch (\Throwable $e) {
             $this->logger->error('UpdateDispatcher exception', [
                 'error' => $e->getMessage(),
@@ -74,7 +75,7 @@ class UpdateDispatcher
             // /cancel ends any active conversation even from within it
             if ($this->isCommand($text, 'cancel')) {
                 $this->conversationManager->end($chatId);
-                $this->sender->sendMessage($chatId, 'Action cancelled.');
+                $this->sender->sendMessage($chatId, $this->translator->trans('dispatcher.cancelled'));
 
                 return;
             }
@@ -90,7 +91,7 @@ class UpdateDispatcher
 
             if ($command === 'cancel') {
                 // No active conversation — nothing to cancel
-                $this->sender->sendMessage($chatId, 'Nothing to cancel.');
+                $this->sender->sendMessage($chatId, $this->translator->trans('dispatcher.nothing_to_cancel'));
 
                 return;
             }
@@ -112,6 +113,16 @@ class UpdateDispatcher
             ?? $update['callback_query']['message']['chat']['id']
             ?? 0
         );
+    }
+
+    /** @param array<string, mixed> $update */
+    private function extractLanguageCode(array $update): ?string
+    {
+        $code = $update['message']['from']['language_code']
+            ?? $update['callback_query']['from']['language_code']
+            ?? null;
+
+        return \is_string($code) ? $code : null;
     }
 
     private function extractCommand(string $text): string

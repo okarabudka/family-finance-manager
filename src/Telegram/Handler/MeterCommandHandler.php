@@ -9,6 +9,7 @@ use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\AddMeterConversation;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class MeterCommandHandler implements CommandHandlerInterface
 {
@@ -16,6 +17,7 @@ class MeterCommandHandler implements CommandHandlerInterface
         private readonly TelegramSender $sender,
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -24,22 +26,22 @@ class MeterCommandHandler implements CommandHandlerInterface
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             return;
         }
 
         $keyboard = [
             'inline_keyboard' => [
                 [
-                    ['text' => '⚡ Electricity', 'callback_data' => 'meter:type:electricity'],
-                    ['text' => '💧 Water',       'callback_data' => 'meter:type:water'],
+                    ['text' => '⚡ '.$this->translator->trans('meter.type.electricity'), 'callback_data' => 'meter:type:electricity'],
+                    ['text' => '💧 '.$this->translator->trans('meter.type.water'), 'callback_data' => 'meter:type:water'],
                 ],
             ],
         ];
 
         $this->sender->sendMessage(
             $chatId,
-            "*Meter Reading*\n\nSelect meter type:",
+            $this->translator->trans('meter.choose_type'),
             $keyboard,
             'Markdown',
         );

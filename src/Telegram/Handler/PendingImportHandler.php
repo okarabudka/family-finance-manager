@@ -17,6 +17,7 @@ use App\Repository\ImportTransactionRepository;
 use App\Repository\UserRepository;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Telegram\BotTranslator;
 
 class PendingImportHandler
 {
@@ -27,6 +28,7 @@ class PendingImportHandler
         private readonly UserRepository $userRepo,
         private readonly TransactionService $transactionService,
         private readonly EntityManagerInterface $em,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -38,7 +40,7 @@ class PendingImportHandler
         $pending = $this->importTxRepo->findFirstPending($importFile);
 
         if ($pending === null) {
-            $this->sender->sendMessage($chatId, 'All transactions from the statement have been processed!');
+            $this->sender->sendMessage($chatId, $this->translator->trans('pending.all_processed'));
 
             return;
         }
@@ -47,16 +49,17 @@ class PendingImportHandler
         $sign     = $amount > 0 ? '+' : '';
         $currency = $importFile->getAccount()->getCurrency();
 
-        $text = "*Unrecognised transaction*\n\n"
-            . "Date: {$pending->getDate()->format('d.m.Y')}\n"
-            . "Amount: {$sign}" . number_format($amount, 2, '.', ' ') . " {$currency}\n"
-            . "Description: {$pending->getRawDescription()}\n";
+        $text = $this->translator->trans('pending.transaction', [
+            '%date%'        => $pending->getDate()->format('d.m.Y'),
+            '%amount%'      => $sign.number_format($amount, 2, '.', ' ').' '.$currency,
+            '%description%' => (string) $pending->getRawDescription(),
+        ])."\n";
 
         if ($pending->getCounterpartyName() !== null) {
-            $text .= "Counterparty: {$pending->getCounterpartyName()}\n";
+            $text .= $this->translator->trans('pending.counterparty', ['%name%' => $pending->getCounterpartyName()])."\n";
         }
 
-        $text .= "\nSelect a category or skip:";
+        $text .= "\n".$this->translator->trans('pending.choose');
 
         $family     = $importFile->getAccount()->getFamily();
         $categories = $this->categoryRepo->findByFamily($family, CategoryType::Expense);
@@ -64,7 +67,7 @@ class PendingImportHandler
 
         // Add skip button at the bottom
         $keyboard['inline_keyboard'][] = [
-            ['text' => 'Skip', 'callback_data' => 'pending:skip:' . $pending->getId()],
+            ['text' => $this->translator->trans('pending.button_skip'), 'callback_data' => 'pending:skip:' . $pending->getId()],
         ];
 
         $this->sender->sendMessage($chatId, $text, $keyboard, 'Markdown');
@@ -77,7 +80,7 @@ class PendingImportHandler
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
@@ -95,7 +98,7 @@ class PendingImportHandler
     {
         $importTx = $this->loadImportTransactionForFamily($txId, $family);
         if ($importTx === null) {
-            $this->sender->sendMessage($chatId, 'Transaction not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
@@ -111,14 +114,14 @@ class PendingImportHandler
         $family   = $user->getFamily();
         $importTx = $this->loadImportTransactionForFamily($txId, $family);
         if ($importTx === null) {
-            $this->sender->sendMessage($chatId, 'Transaction not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
 
         $category = $this->categoryRepo->findByFamilyAndId($family, $catId);
         if ($category === null) {
-            $this->sender->sendMessage($chatId, 'Category not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.category_not_found'));
 
             return;
         }

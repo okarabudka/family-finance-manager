@@ -10,6 +10,7 @@ use App\Domain\Transaction\TransactionService;
 use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class MessageHandler
 {
@@ -20,6 +21,7 @@ class MessageHandler
         private readonly AccountRepository $accountRepo,
         private readonly TransactionService $transactionService,
         private readonly TelegramSender $sender,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -30,7 +32,7 @@ class MessageHandler
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
@@ -40,7 +42,7 @@ class MessageHandler
         if ($parsed === null) {
             $this->sender->sendMessage(
                 $chatId,
-                "Not understood. Enter an expense as:\n`50 groceries`\n`150.50 restaurant`\n\nOr use /help",
+                $this->translator->trans('quick_input.not_understood'),
                 parseMode: 'Markdown',
             );
 
@@ -58,7 +60,7 @@ class MessageHandler
         if ($account === null) {
             $this->sender->sendMessage(
                 $chatId,
-                'Please set a default account in the web interface before using quick input.',
+                $this->translator->trans('quick_input.no_default_account'),
             );
 
             return;
@@ -75,21 +77,21 @@ class MessageHandler
 
         $categoryText = $category !== null
             ? $category->getName()
-            : 'No category (tap to assign)';
+            : $this->translator->trans('quick_input.no_category');
 
         $amountFormatted = number_format((float) $parsed->amount, 2, '.', ' ');
         $currency        = $user->getFamily()->getCurrency();
 
         $keyboard = [
             'inline_keyboard' => [[
-                ['text' => 'Category', 'callback_data' => "tx:category:{$transaction->getId()}"],
-                ['text' => 'Delete',   'callback_data' => "tx:delete:{$transaction->getId()}"],
+                ['text' => $this->translator->trans('quick_input.button_category'), 'callback_data' => "tx:category:{$transaction->getId()}"],
+                ['text' => $this->translator->trans('quick_input.button_delete'), 'callback_data' => "tx:delete:{$transaction->getId()}"],
             ]],
         ];
 
         $this->sender->sendMessage(
             $chatId,
-            "Recorded!\n{$amountFormatted} {$currency}\n{$categoryText}",
+            $this->translator->trans('quick_input.recorded', ['%amount%' => "{$amountFormatted} {$currency}", '%category%' => $categoryText]),
             $keyboard,
         );
     }

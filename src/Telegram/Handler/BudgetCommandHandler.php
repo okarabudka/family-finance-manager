@@ -9,6 +9,7 @@ use App\Repository\BudgetRepository;
 use App\Repository\UserRepository;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class BudgetCommandHandler implements CommandHandlerInterface
 {
@@ -17,6 +18,7 @@ class BudgetCommandHandler implements CommandHandlerInterface
         private readonly BudgetRepository $budgetRepo,
         private readonly AnalyticsService $analyticsService,
         private readonly TelegramSender $sender,
+        private readonly BotTranslator $translator,
     ) {}
 
     /** @param array<string, mixed> $update */
@@ -24,7 +26,7 @@ class BudgetCommandHandler implements CommandHandlerInterface
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
@@ -37,7 +39,7 @@ class BudgetCommandHandler implements CommandHandlerInterface
         $budgets = $this->budgetRepo->findByFamilyAndMonth($family, $year, $month);
 
         if (count($budgets) === 0) {
-            $this->sender->sendMessage($chatId, 'No budgets set for this month.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('budget.none'));
 
             return;
         }
@@ -53,9 +55,9 @@ class BudgetCommandHandler implements CommandHandlerInterface
             $actualByCategory[(string) $categoryReport->category->getId()] = $categoryReport->amount;
         }
 
-        $monthLabel = $now->format('F Y');
+        $monthLabel = $this->translator->monthLabel($now);
         $currency   = $family->getCurrency();
-        $text       = "*Budget for {$monthLabel}:*\n\n";
+        $text       = $this->translator->trans('budget.title', ['%month%' => $monthLabel])."\n\n";
 
         foreach ($budgets as $budget) {
             $planned      = (float) $budget->getPlannedAmount();

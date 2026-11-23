@@ -14,6 +14,7 @@ use App\Repository\CategoryRepository;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
 use App\Telegram\TelegramSender;
+use App\Telegram\BotTranslator;
 
 class TransactionCallbackHandler
 {
@@ -23,6 +24,7 @@ class TransactionCallbackHandler
         private readonly CategoryRepository $categoryRepo,
         private readonly TransactionService $transactionService,
         private readonly TelegramSender $sender,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -32,7 +34,7 @@ class TransactionCallbackHandler
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {
-            $this->sender->sendMessage($chatId, 'Please register first: /start');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
@@ -52,7 +54,7 @@ class TransactionCallbackHandler
     {
         $transaction = $this->txRepo->find($txId);
         if ($transaction === null || !$transaction->getFamily()->getId()->equals($family->getId())) {
-            $this->sender->sendMessage($chatId, 'Transaction not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
@@ -64,7 +66,7 @@ class TransactionCallbackHandler
 
         $this->sender->sendMessage(
             $chatId,
-            'Deleted: ' . $amount . ' ' . $currency . ($desc !== '' ? " — {$desc}" : ''),
+            $this->translator->trans('transaction.deleted', ['%amount%' => $amount.' '.$currency]).($desc !== '' ? " — {$desc}" : ''),
         );
     }
 
@@ -72,7 +74,7 @@ class TransactionCallbackHandler
     {
         $transaction = $this->txRepo->find($txId);
         if ($transaction === null || !$transaction->getFamily()->getId()->equals($user->getFamily()->getId())) {
-            $this->sender->sendMessage($chatId, 'Transaction not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
@@ -83,7 +85,7 @@ class TransactionCallbackHandler
         $categories = $this->categoryRepo->findByFamily($user->getFamily(), $catType);
 
         if (empty($categories)) {
-            $this->sender->sendMessage($chatId, 'No categories available. Add them at the web interface.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('transaction.no_categories'));
 
             return;
         }
@@ -99,26 +101,26 @@ class TransactionCallbackHandler
             );
         }
 
-        $this->sender->sendMessage($chatId, 'Choose a category:', ['inline_keyboard' => $rows]);
+        $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_category'), ['inline_keyboard' => $rows]);
     }
 
     private function handleAssign(int $chatId, string $txId, string $catId, User $user): void
     {
         $transaction = $this->txRepo->find($txId);
         if ($transaction === null || !$transaction->getFamily()->getId()->equals($user->getFamily()->getId())) {
-            $this->sender->sendMessage($chatId, 'Transaction not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
 
         $category = $this->categoryRepo->findByFamilyAndId($user->getFamily(), $catId);
         if ($category === null) {
-            $this->sender->sendMessage($chatId, 'Category not found.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('common.category_not_found'));
 
             return;
         }
 
         $this->transactionService->update($transaction, ['category' => $category]);
-        $this->sender->sendMessage($chatId, "Category set: {$category->getName()}");
+        $this->sender->sendMessage($chatId, $this->translator->trans('transaction.category_set', ['%category%' => $category->getName()]));
     }
 }

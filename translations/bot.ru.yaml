@@ -1,0 +1,139 @@
+common:
+    register_first: 'Сначала зарегистрируйтесь: /start'
+    transaction_not_found: 'Операция не найдена.'
+    category_not_found: 'Категория не найдена.'
+    choose_category: 'Выберите категорию:'
+    choose_category_from_list: 'Пожалуйста, выберите категорию из списка.'
+    choose_account: 'Выберите счёт:'
+    choose_account_from_list: 'Пожалуйста, выберите счёт из списка.'
+    invalid_amount: 'Неверная сумма. Введите число больше 0:'
+    today: 'сегодня'
+    ask_date: 'Введите дату (дд.мм.гггг) или напишите «%today%»:'
+    invalid_date: 'Неверный формат. Введите дату в виде 25.03.2025 или «%today%»:'
+    no_category: 'Без категории'
+    no_expense_data: 'В этом месяце расходов пока нет.'
+
+dispatcher:
+    cancelled: 'Действие отменено.'
+    nothing_to_cancel: 'Нечего отменять.'
+    unknown_command: 'Неизвестная команда. Список команд: /help'
+
+start:
+    welcome_back: 'С возвращением, %name%!'
+    choose_action: 'Выберите действие:'
+
+help:
+    text: "*Доступные команды:*\n\n/start — регистрация / приветствие\n/balance — остатки на счетах\n/add — добавить расход (или быстрый ввод: \"50 продукты\")\n/income — добавить доход\n/transfer — перевод между счетами\n/report — отчёт за месяц\n/stats — диаграмма расходов\n/import — импорт банковской выписки\n/pending — разобрать импортированные операции\n/meter — передать показания счётчика (электричество/вода)\n/cancel — отменить текущее действие\n/help — эта справка"
+
+register:
+    ask_name: 'Добро пожаловать! Как вас зовут?'
+    name_too_short: 'Имя слишком короткое. Попробуйте ещё раз:'
+    already_registered: 'Вы уже зарегистрированы. Список команд: /help'
+    family_name: 'Семья %name%'
+    main_account: 'Основной счёт'
+    cash_account: 'Наличные'
+    done: "Готово, %name%! Ваш аккаунт создан.\n\nСчета по умолчанию:\n- %main_account%\n- %cash_account%\n\nПопробуйте добавить первый расход:\n`50 продукты`"
+
+balance:
+    title: '*Текущий баланс*'
+    total: '*Итого*:'
+    account_type:
+        checking: 'Банк'
+        savings: 'Накопления'
+        cash: 'Наличные'
+        credit_card: 'Карта'
+
+budget:
+    none: 'На этот месяц бюджеты не заданы.'
+    title: '*Бюджет на %month%:*'
+
+quick_input:
+    not_understood: "Не понял. Введите расход так:\n`50 продукты`\n`150.50 ресторан`\n\nИли воспользуйтесь /help"
+    no_default_account: 'Перед быстрым вводом выберите счёт по умолчанию в веб-интерфейсе.'
+    no_category: 'Без категории (нажмите, чтобы выбрать)'
+    button_category: 'Категория'
+    button_delete: 'Удалить'
+    recorded: "Записано!\n%amount%\n%category%"
+
+expense:
+    ask_amount: 'Введите сумму расхода:'
+    ask_description: 'Введите описание (или «-», чтобы пропустить):'
+    account_not_found: 'Счёт не найден. Начните заново: /add'
+    recorded: "Расход записан!\n\n%amount%\n%category%\n%date%"
+
+income:
+    ask_amount: 'Введите сумму дохода:'
+    account_not_found: 'Счёт не найден. Начните заново: /income'
+    recorded: "Доход записан!\n\n%amount%\n%category%\n%date%"
+
+transfer:
+    ask_amount: 'Введите сумму перевода:'
+    choose_from: 'Выберите счёт списания (откуда):'
+    choose_to: 'Выберите счёт зачисления (куда):'
+    source_not_found: 'Счёт списания не найден. Начните заново: /transfer'
+    target_not_found: 'Счёт зачисления не найден. Начните заново: /transfer'
+    recorded: "Перевод записан!\n\n%amount%\nОткуда: %from%\nКуда: %to%\n%date%"
+
+transaction:
+    deleted: 'Удалено: %amount%'
+    no_categories: 'Категорий пока нет. Добавьте их в веб-интерфейсе.'
+    category_set: 'Категория установлена: %category%'
+
+report:
+    summary: "*Отчёт за %month%*\n\nДоходы:  *%income%*\nРасходы: *%expenses%*\nБаланс:  *%balance%*"
+    by_category: '*По категориям:*'
+    button_chart: 'Диаграмма'
+    button_details: 'Подробнее'
+    chart_title: 'Расходы: %month%'
+    chart_caption: 'Расходы по категориям — %month%'
+    details_title: '*Расходы подробно — %month%*'
+    planned: 'план %amount%'
+
+stats:
+    empty: "*Статистика — %month%*\n\nВ этом месяце расходов пока нет."
+    caption: "*Расходы по категориям — %month%*\n\nРасходы:  *%expenses%*\nДоходы:   *%income%*\nСэкономлено: *%saved%*"
+
+meter:
+    choose_type: "*Показания счётчика*\n\nВыберите тип счётчика:"
+    choose_type_from_buttons: 'Пожалуйста, выберите тип счётчика кнопками.'
+    invalid_type: 'Неизвестный тип счётчика. Попробуйте ещё раз: /meter'
+    type:
+        electricity: 'Электричество'
+        water: 'Вода'
+    last_reading: 'Последние показания: *%value%* от %date%'
+    ask_value: 'Введите показания счётчика (%unit%):'
+    invalid_value: 'Неверное значение. Введите положительное число (например, 12345.67):'
+    skip: 'пропустить'
+    ask_photo: "Значение *%value%* сохранено.\n\nТеперь пришлите фото счётчика (или напишите *%skip%*):"
+    photo_or_skip: 'Пришлите фото или напишите *%skip%*:'
+    photo_download_failed: 'Не удалось загрузить фото, сохраняю без него.'
+    photo_saved: '(фото сохранено)'
+    session_error: 'Ошибка сессии. Попробуйте ещё раз: /meter'
+    saved: "Показания *%type%* сохранены%photo%!\n\nЗначение: *%value%*\nДата: %date%"
+
+pending:
+    none: 'Нет операций, ожидающих разбора.'
+    all_processed: 'Все операции из выписки обработаны!'
+    transaction: "*Нераспознанная операция*\n\nДата: %date%\nСумма: %amount%\nОписание: %description%"
+    counterparty: 'Контрагент: %name%'
+    choose: 'Выберите категорию или пропустите:'
+    button_skip: 'Пропустить'
+
+import:
+    no_accounts: 'Активных счетов нет. Сначала создайте счёт.'
+    choose_account: "*Импорт банковской выписки*\n\nВыберите счёт, к которому относится выписка:"
+    choose_account_from_buttons: 'Пожалуйста, выберите счёт кнопками.'
+    send_file: 'Пришлите файл выписки (MT940 / .sta или CSV Sparkasse).'
+    send_as_attachment: 'Пришлите выписку файлом-вложением (MT940 или CSV).'
+    download_failed: 'Не удалось загрузить файл. Попробуйте ещё раз.'
+    unsupported_format: 'Неподдерживаемый формат. Пришлите файл MT940 (.sta) или CSV Sparkasse.'
+    account_not_found: 'Ошибка: счёт не найден. Начните заново: /import'
+    file_received: "Файл получен! Обрабатываю в фоне...\n\nЯ сообщу, когда импорт завершится."
+    complete: "Импорт завершён: *%file%*\n\nИмпортировано автоматически: *%imported%*\nПропущено дубликатов: *%skipped%*"
+    complete_pending: "Ожидают разбора: *%count%*\n\nКоманда /pending покажет нераспознанные операции по одной."
+    complete_all_categorised: 'Все операции распределены по категориям автоматически.'
+    failed: "Импорт не удался: *%file%*\n\nПричина: %reason%"
+
+weekly:
+    all_good: 'Всё в порядке! На этой неделе предупреждений нет.'
+    title: '*Обзор за неделю*'

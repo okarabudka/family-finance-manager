@@ -16,6 +16,7 @@ use App\Telegram\TelegramFileDownloader;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use App\Telegram\BotTranslator;
 
 class ImportConversation implements ConversationInterface
 {
@@ -28,6 +29,7 @@ class ImportConversation implements ConversationInterface
         private readonly AccountRepository $accountRepo,
         private readonly EntityManagerInterface $em,
         private readonly MessageBusInterface $messageBus,
+        private readonly BotTranslator $translator,
     ) {}
 
     /**
@@ -54,7 +56,7 @@ class ImportConversation implements ConversationInterface
         $callbackData = $update['callback_query']['data'] ?? null;
 
         if ($callbackData === null || !str_starts_with($callbackData, 'import:account:')) {
-            $this->sender->sendMessage($chatId, 'Please select an account using the buttons provided.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('import.choose_account_from_buttons'));
             return;
         }
 
@@ -66,7 +68,7 @@ class ImportConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            'Please send the bank statement file (MT940 / .sta or Sparkasse CSV).',
+            $this->translator->trans('import.send_file'),
         );
     }
 
@@ -79,7 +81,7 @@ class ImportConversation implements ConversationInterface
         $document = $update['message']['document'] ?? null;
 
         if ($document === null) {
-            $this->sender->sendMessage($chatId, 'Please send the bank statement as a file attachment (MT940 or CSV).');
+            $this->sender->sendMessage($chatId, $this->translator->trans('import.send_as_attachment'));
             return;
         }
 
@@ -90,7 +92,7 @@ class ImportConversation implements ConversationInterface
         $localPath = $this->telegramFileDownloader->download($fileId, 'imports');
 
         if ($localPath === null) {
-            $this->sender->sendMessage($chatId, 'Failed to download the file. Please try again.');
+            $this->sender->sendMessage($chatId, $this->translator->trans('import.download_failed'));
             return;
         }
 
@@ -101,7 +103,7 @@ class ImportConversation implements ConversationInterface
             @unlink($localPath);
             $this->sender->sendMessage(
                 $chatId,
-                'Unsupported file format. Please send an MT940 (.sta) or Sparkasse CSV file.',
+                $this->translator->trans('import.unsupported_format'),
             );
             $this->conversationManager->end($chatId);
             return;
@@ -113,7 +115,7 @@ class ImportConversation implements ConversationInterface
             : null;
 
         if ($user === null || $account === null) {
-            $this->sender->sendMessage($chatId, 'Error: account not found. Please start again: /import');
+            $this->sender->sendMessage($chatId, $this->translator->trans('import.account_not_found'));
             $this->conversationManager->end($chatId);
             return;
         }
@@ -136,7 +138,7 @@ class ImportConversation implements ConversationInterface
 
         $this->sender->sendMessage(
             $chatId,
-            "File received! Processing in the background...\n\nYou will be notified when the import is complete.",
+            $this->translator->trans('import.file_received'),
         );
     }
 }
