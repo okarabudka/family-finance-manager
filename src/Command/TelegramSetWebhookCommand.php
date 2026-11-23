@@ -45,7 +45,7 @@ class TelegramSetWebhookCommand extends Command
             return Command::SUCCESS;
         }
 
-        $description = $result['description'] ?? 'unknown error';
+        $description = \is_string($result['description'] ?? null) ? $result['description'] : 'unknown error';
         $output->writeln("<error>Failed to register webhook: {$description}</error>");
 
         return Command::FAILURE;

@@ -23,7 +23,7 @@ class CommandRegistry
      */
     public function execute(string $command, array $update): void
     {
-        $chatId  = (int) ($update['message']['chat']['id'] ?? 0);
+        $chatId  = Payload::chatId($update);
         $handler = $this->handlers[$command] ?? null;
 
         if ($handler === null) {

@@ -18,9 +18,11 @@ use App\Entity\Family;
 use App\Repository\CategoryRepository;
 use App\Repository\TransactionRepository;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class SuggestionServiceTest extends TestCase
 {
     private AnalyticsService&MockObject $analyticsService;
@@ -52,6 +54,7 @@ class SuggestionServiceTest extends TestCase
     private function createTranslator(): TranslatorInterface
     {
         return new class implements TranslatorInterface {
+            /** @param array<string, mixed> $parameters */
             public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 return $id.' '.json_encode($parameters, \JSON_UNESCAPED_UNICODE);
@@ -83,6 +86,7 @@ class SuggestionServiceTest extends TestCase
         );
     }
 
+    /** @param list<CategoryComparison> $categoryComparisons */
     private function makePeriodComparison(
         MonthlyReport $current,
         MonthlyReport $previous,

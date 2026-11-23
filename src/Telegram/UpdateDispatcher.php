@@ -40,7 +40,7 @@ class UpdateDispatcher
     /** @param array<string, mixed> $update */
     private function doDispatch(array $update): void
     {
-        $chatId = $this->extractChatId($update);
+        $chatId = Payload::chatId($update);
 
         if ($chatId === 0) {
             return;
@@ -48,8 +48,7 @@ class UpdateDispatcher
 
         // Callback queries (inline keyboard button presses)
         if (isset($update['callback_query'])) {
-            $callbackQuery = $update['callback_query'];
-            $callbackData  = $callbackQuery['data'] ?? '';
+            $callbackData = Payload::callbackData($update) ?? '';
 
             if ($this->conversationManager->hasActiveConversation($chatId)) {
                 // Wrap callback_query into a pseudo-update so conversations can read it uniformly
@@ -63,12 +62,12 @@ class UpdateDispatcher
             }
 
             // Always acknowledge the callback so Telegram stops the loading indicator
-            $this->sender->answerCallbackQuery($callbackQuery['id']);
+            $this->sender->answerCallbackQuery(Payload::string($update, 'callback_query', 'id') ?? '');
 
             return;
         }
 
-        $text = $update['message']['text'] ?? '';
+        $text = Payload::text($update);
 
         // If a conversation is active, feed the message into it
         if ($this->conversationManager->hasActiveConversation($chatId)) {
@@ -106,23 +105,10 @@ class UpdateDispatcher
     }
 
     /** @param array<string, mixed> $update */
-    private function extractChatId(array $update): int
-    {
-        return (int) (
-            $update['message']['chat']['id']
-            ?? $update['callback_query']['message']['chat']['id']
-            ?? 0
-        );
-    }
-
-    /** @param array<string, mixed> $update */
     private function extractLanguageCode(array $update): ?string
     {
-        $code = $update['message']['from']['language_code']
-            ?? $update['callback_query']['from']['language_code']
-            ?? null;
-
-        return \is_string($code) ? $code : null;
+        return Payload::string($update, 'message', 'from', 'language_code')
+            ?? Payload::string($update, 'callback_query', 'from', 'language_code');
     }
 
     private function extractCommand(string $text): string

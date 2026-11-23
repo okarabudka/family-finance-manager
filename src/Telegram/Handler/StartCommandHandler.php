@@ -8,6 +8,7 @@ use App\Repository\UserRepository;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\RegisterConversation;
 use App\Telegram\ConversationManager;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use App\Telegram\BotTranslator;
 
@@ -23,7 +24,7 @@ class StartCommandHandler implements CommandHandlerInterface
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
-        $telegramUser = $update['message']['from'] ?? [];
+        $telegramUser = Payload::array($update, 'message', 'from');
         $user         = $this->userRepo->findByTelegramChatId($chatId);
 
         if ($user !== null) {

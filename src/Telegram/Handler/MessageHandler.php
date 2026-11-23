@@ -9,6 +9,7 @@ use App\Domain\Transaction\QuickInputParser;
 use App\Domain\Transaction\TransactionService;
 use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use App\Telegram\BotTranslator;
 
@@ -27,8 +28,8 @@ class MessageHandler
     /** @param array<string, mixed> $update */
     public function handle(array $update): void
     {
-        $chatId = (int) ($update['message']['chat']['id'] ?? 0);
-        $text   = $update['message']['text'] ?? '';
+        $chatId = Payload::chatId($update);
+        $text   = Payload::text($update);
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
         if ($user === null || $user->getFamily() === null) {

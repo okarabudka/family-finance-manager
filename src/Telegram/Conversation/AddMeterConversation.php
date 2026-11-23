@@ -11,6 +11,7 @@ use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramFileDownloader;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use App\Telegram\BotTranslator;
 
@@ -32,7 +33,7 @@ class AddMeterConversation implements ConversationInterface
      */
     public function handle(int $chatId, array $update, array $state): void
     {
-        $step = $state['step'] ?? 0;
+        $step = Payload::int($state, 'step') ?? 0;
 
         match ($step) {
             0 => $this->handleTypeSelection($chatId, $update, $state),
@@ -48,7 +49,7 @@ class AddMeterConversation implements ConversationInterface
      */
     private function handleTypeSelection(int $chatId, array $update, array $state): void
     {
-        $callbackData = $update['callback_query']['data'] ?? null;
+        $callbackData = Payload::callbackData($update);
 
         if ($callbackData === null || !str_starts_with($callbackData, 'meter:type:')) {
             $this->sender->sendMessage($chatId, $this->translator->trans('meter.choose_type_from_buttons'));
@@ -64,7 +65,7 @@ class AddMeterConversation implements ConversationInterface
             return;
         }
 
-        $state['data']['type'] = $type->value;
+        $state['data'] = [...Payload::array($state, 'data'), 'type' => $type->value];
         $state['step']         = 1;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -95,7 +96,7 @@ class AddMeterConversation implements ConversationInterface
      */
     private function handleValueInput(int $chatId, array $update, array $state): void
     {
-        $text = trim($update['message']['text'] ?? '');
+        $text = trim(Payload::text($update));
 
         $value = filter_var(str_replace(',', '.', $text), FILTER_VALIDATE_FLOAT);
 
@@ -104,7 +105,7 @@ class AddMeterConversation implements ConversationInterface
             return;
         }
 
-        $state['data']['value'] = $value;
+        $state['data'] = [...Payload::array($state, 'data'), 'value' => $value];
         $state['step']          = 2;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -121,11 +122,13 @@ class AddMeterConversation implements ConversationInterface
      */
     private function handlePhotoInput(int $chatId, array $update, array $state): void
     {
-        $text      = mb_strtolower(trim($update['message']['text'] ?? ''));
-        $photos    = $update['message']['photo'] ?? [];
+        $text      = mb_strtolower(trim(Payload::text($update)));
+        // Telegram sends several sizes of the same photo, the largest one last
+        $photos    = Payload::array($update, 'message', 'photo');
+        $fileId    = $photos === [] ? null : Payload::string(Payload::stringKeys(end($photos)) ?? [], 'file_id');
         $photoPath = null;
 
-        $hasPhoto = !empty($photos);
+        $hasPhoto = $fileId !== null;
         $isSkip   = \in_array($text, ['skip', mb_strtolower($this->translator->trans('meter.skip'))], true);
 
         if (!$hasPhoto && !$isSkip) {
@@ -133,11 +136,8 @@ class AddMeterConversation implements ConversationInterface
             return;
         }
 
-        if ($hasPhoto) {
-            // Telegram sends multiple sizes — pick largest (last)
-            $largestPhoto = end($photos);
-            $fileId       = $largestPhoto['file_id'];
-            $photoPath    = $this->telegramFileDownloader->download($fileId, 'meters');
+        if ($fileId !== null) {
+            $photoPath = $this->telegramFileDownloader->download($fileId, 'meters');
 
             if ($photoPath === null) {
                 $this->sender->sendMessage($chatId, $this->translator->trans('meter.photo_download_failed'));
@@ -158,14 +158,19 @@ class AddMeterConversation implements ConversationInterface
             return;
         }
 
-        $type  = MeterType::from($state['data']['type']);
-        $value = (float) $state['data']['value'];
+        $type  = MeterType::tryFrom(Payload::string($state, 'data', 'type') ?? '');
+        $value = Payload::string($state, 'data', 'value');
+        if ($type === null || $value === null) {
+            $this->sender->sendMessage($chatId, $this->translator->trans('meter.session_error'));
+            $this->conversationManager->end($chatId);
+            return;
+        }
 
         $reading = $this->meterService->saveReading(
             family:      $user->getFamily(),
             createdBy:   $user,
             type:        $type,
-            value:       $value,
+            value:       (float) $value,
             readingDate: new \DateTimeImmutable('today'),
             photoPath:   $photoPath,
         );

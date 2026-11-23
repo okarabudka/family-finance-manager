@@ -51,7 +51,7 @@ class RecommendationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('mark_seen_' . $recommendation->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('mark_seen_' . $recommendation->getId(), $request->request->getString('_token'))) {
             $recommendation->setSeenByUser(true);
             $em->flush();
             $this->addFlash('success', 'flash.recommendation.seen');

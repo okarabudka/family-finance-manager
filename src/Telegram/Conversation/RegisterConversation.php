@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -33,8 +34,8 @@ class RegisterConversation implements ConversationInterface
      */
     public function handle(int $chatId, array $update, array $state): void
     {
-        $step = $state['step'] ?? 0;
-        $text = $update['message']['text'] ?? '';
+        $step = Payload::int($state, 'step') ?? 0;
+        $text = Payload::text($update);
 
         match ($step) {
             0 => $this->askName($chatId, $state),
@@ -69,8 +70,8 @@ class RegisterConversation implements ConversationInterface
             return;
         }
 
-        $telegramUser = $state['data']['telegramUser'] ?? [];
-        $telegramId   = (string) ($telegramUser['id'] ?? $chatId);
+        $telegramId       = Payload::string($state, 'data', 'telegramUser', 'id') ?? (string) $chatId;
+        $telegramUsername = Payload::string($state, 'data', 'telegramUser', 'username');
 
         // Create a family
         $family = new Family();
@@ -83,7 +84,7 @@ class RegisterConversation implements ConversationInterface
              ->setEmail("telegram_{$telegramId}@local")
              ->setPassword($this->passwordHasher->hashPassword($user, bin2hex(random_bytes(32))))
              ->setTelegramChatId($chatId)
-             ->setTelegramUsername($telegramUser['username'] ?? null)
+             ->setTelegramUsername($telegramUsername)
              ->setFamily($family)
              ->setRoles(['ROLE_USER']);
 

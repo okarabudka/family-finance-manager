@@ -17,6 +17,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+/** @extends AbstractCrudController<User> */
 class UserCrudController extends AbstractCrudController
 {
     public function __construct(
@@ -56,7 +57,7 @@ class UserCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, mixed $entityInstance): void
     {
-        if ($entityInstance instanceof User && $entityInstance->getPassword() !== '') {
+        if ($entityInstance->getPassword() !== '') {
             $entityInstance->setPassword(
                 $this->passwordHasher->hashPassword($entityInstance, $entityInstance->getPassword())
             );
@@ -66,16 +67,14 @@ class UserCrudController extends AbstractCrudController
 
     public function updateEntity(EntityManagerInterface $entityManager, mixed $entityInstance): void
     {
-        if ($entityInstance instanceof User) {
-            $plain = $entityInstance->getPassword();
-            if ($plain === '') {
-                $original = $entityManager->getUnitOfWork()->getOriginalEntityData($entityInstance);
-                $entityInstance->setPassword($original['password'] ?? '');
-            } else {
-                $entityInstance->setPassword(
-                    $this->passwordHasher->hashPassword($entityInstance, $plain)
-                );
-            }
+        $plain = $entityInstance->getPassword();
+        if ($plain === '') {
+            $original = $entityManager->getUnitOfWork()->getOriginalEntityData($entityInstance);
+            $entityInstance->setPassword(\is_string($original['password'] ?? null) ? $original['password'] : '');
+        } else {
+            $entityInstance->setPassword(
+                $this->passwordHasher->hashPassword($entityInstance, $plain)
+            );
         }
         parent::updateEntity($entityManager, $entityInstance);
     }

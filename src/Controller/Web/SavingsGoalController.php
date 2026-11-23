@@ -117,7 +117,7 @@ class SavingsGoalController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_savings_goal_' . $goal->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete_savings_goal_' . $goal->getId(), $request->request->getString('_token'))) {
             $em->remove($goal);
             $em->flush();
             $this->addFlash('success', 'flash.savings_goal.deleted');

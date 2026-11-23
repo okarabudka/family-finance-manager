@@ -12,6 +12,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 
+/** @extends AbstractCrudController<Budget> */
 class BudgetCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string

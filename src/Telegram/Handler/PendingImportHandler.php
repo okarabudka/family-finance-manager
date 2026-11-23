@@ -90,7 +90,7 @@ class PendingImportHandler
         if (($parts[1] ?? '') === 'skip' && isset($parts[2])) {
             $this->handleSkip($chatId, $parts[2], $user->getFamily());
         } elseif (($parts[1] ?? '') === 'category' && isset($parts[2], $parts[3])) {
-            $this->handleCategoryAssign($chatId, $parts[2], $parts[3], $user);
+            $this->handleCategoryAssign($chatId, $parts[2], $parts[3], $user, $user->getFamily());
         }
     }
 
@@ -109,9 +109,8 @@ class PendingImportHandler
         $this->sendNextPending($chatId, $importTx->getImportFile());
     }
 
-    private function handleCategoryAssign(int $chatId, string $txId, string $catId, User $user): void
+    private function handleCategoryAssign(int $chatId, string $txId, string $catId, User $user, Family $family): void
     {
-        $family   = $user->getFamily();
         $importTx = $this->loadImportTransactionForFamily($txId, $family);
         if ($importTx === null) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
@@ -174,7 +173,8 @@ class PendingImportHandler
 
     /**
      * @param Category[] $categories
-     * @return array<string, mixed>
+     *
+     * @return array{inline_keyboard: list<list<array{text: string, callback_data: string}>>}
      */
     private function buildCategoryKeyboard(array $categories, ImportTransaction $pending): array
     {

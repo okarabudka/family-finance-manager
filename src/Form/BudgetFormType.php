@@ -6,6 +6,7 @@ namespace App\Form;
 
 use App\Entity\Category;
 use App\Entity\Family;
+use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
@@ -24,7 +25,7 @@ class BudgetFormType extends AbstractType
         $builder
             ->add('category', EntityType::class, [
                 'class'         => Category::class,
-                'query_builder' => fn ($repo) => $repo->createFamilyQueryBuilder($family),
+                'query_builder' => fn (CategoryRepository $repo) => $repo->createFamilyQueryBuilder($family),
                 'label'         => 'budget.form.category',
                 'choice_label'  => 'name',
             ])

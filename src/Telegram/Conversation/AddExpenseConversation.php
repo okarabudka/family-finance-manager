@@ -11,6 +11,7 @@ use App\Repository\CategoryRepository;
 use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use App\Telegram\BotTranslator;
 
@@ -32,9 +33,9 @@ class AddExpenseConversation implements ConversationInterface
      */
     public function handle(int $chatId, array $update, array $state): void
     {
-        $step         = $state['step'] ?? 0;
-        $text         = $update['message']['text'] ?? '';
-        $callbackData = $update['callback_query']['data'] ?? null;
+        $step         = Payload::int($state, 'step') ?? 0;
+        $text         = Payload::text($update);
+        $callbackData = Payload::callbackData($update);
 
         match ($step) {
             0 => $this->askAmount($chatId, $state),
@@ -66,7 +67,7 @@ class AddExpenseConversation implements ConversationInterface
             return;
         }
 
-        $state['data']['amount'] = $amount;
+        $state['data'] = [...Payload::array($state, 'data'), 'amount' => $amount];
         $state['step']           = 2;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -94,7 +95,7 @@ class AddExpenseConversation implements ConversationInterface
         }
 
         $categoryId              = substr($callbackData, 9);
-        $state['data']['categoryId'] = $categoryId;
+        $state['data'] = [...Payload::array($state, 'data'), 'categoryId' => $categoryId];
         $state['step']           = 3;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -121,7 +122,7 @@ class AddExpenseConversation implements ConversationInterface
         }
 
         $accountId                = substr($callbackData, 8);
-        $state['data']['accountId'] = $accountId;
+        $state['data'] = [...Payload::array($state, 'data'), 'accountId' => $accountId];
         $state['step']            = 4;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -132,7 +133,7 @@ class AddExpenseConversation implements ConversationInterface
     private function handleDescription(int $chatId, string $text, array $state): void
     {
         $description = trim($text);
-        $state['data']['description'] = ($description === '-') ? '' : $description;
+        $state['data'] = [...Payload::array($state, 'data'), 'description' => ($description === '-') ? '' : $description];
         $state['step'] = 5;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -161,7 +162,7 @@ class AddExpenseConversation implements ConversationInterface
             }
         }
 
-        $state['data']['date'] = $date->format('Y-m-d');
+        $state['data'] = [...Payload::array($state, 'data'), 'date' => $date->format('Y-m-d')];
         $this->conversationManager->updateState($chatId, $state);
 
         $this->createTransaction($chatId, $state);
@@ -178,13 +179,11 @@ class AddExpenseConversation implements ConversationInterface
             return;
         }
 
-        $data = $state['data'];
+        $data = Payload::array($state, 'data');
 
-        $date = isset($data['date'])
-            ? new \DateTimeImmutable($data['date'])
-            : new \DateTimeImmutable();
+        $date = new \DateTimeImmutable(Payload::string($data, 'date') ?? 'now');
 
-        $account = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['accountId']);
+        $account = $this->accountRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'accountId') ?? '');
         if ($account === null) {
             $this->sender->sendMessage($chatId, $this->translator->trans('expense.account_not_found'));
             $this->conversationManager->end($chatId);
@@ -195,10 +194,10 @@ class AddExpenseConversation implements ConversationInterface
         $transaction = $this->transactionService->addExpense(
             family:      $user->getFamily(),
             user:        $user,
-            amount:      (string) $data['amount'],
-            category:    $this->categoryRepo->findByFamilyAndId($user->getFamily(), $data['categoryId']),
+            amount:      Payload::string($data, 'amount') ?? '0',
+            category:    $this->categoryRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'categoryId') ?? ''),
             account:     $account,
-            description: $data['description'] ?? '',
+            description: Payload::string($data, 'description') ?? '',
             date:        $date,
         );
 

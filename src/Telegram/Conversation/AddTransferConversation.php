@@ -9,6 +9,7 @@ use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
+use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use App\Telegram\BotTranslator;
 
@@ -29,9 +30,9 @@ class AddTransferConversation implements ConversationInterface
      */
     public function handle(int $chatId, array $update, array $state): void
     {
-        $step         = $state['step'] ?? 0;
-        $text         = $update['message']['text'] ?? '';
-        $callbackData = $update['callback_query']['data'] ?? null;
+        $step         = Payload::int($state, 'step') ?? 0;
+        $text         = Payload::text($update);
+        $callbackData = Payload::callbackData($update);
 
         match ($step) {
             0 => $this->askAmount($chatId, $state),
@@ -62,7 +63,7 @@ class AddTransferConversation implements ConversationInterface
             return;
         }
 
-        $state['data']['amount'] = $amount;
+        $state['data'] = [...Payload::array($state, 'data'), 'amount' => $amount];
         $state['step']           = 2;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -89,7 +90,7 @@ class AddTransferConversation implements ConversationInterface
         }
 
         $accountId                     = substr($callbackData, 13);
-        $state['data']['fromAccountId'] = $accountId;
+        $state['data'] = [...Payload::array($state, 'data'), 'fromAccountId' => $accountId];
         $state['step']                 = 3;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -116,7 +117,7 @@ class AddTransferConversation implements ConversationInterface
         }
 
         $accountId                   = substr($callbackData, 11);
-        $state['data']['toAccountId'] = $accountId;
+        $state['data'] = [...Payload::array($state, 'data'), 'toAccountId' => $accountId];
         $state['step']               = 4;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -134,9 +135,9 @@ class AddTransferConversation implements ConversationInterface
             return;
         }
 
-        $data = $state['data'];
+        $data = Payload::array($state, 'data');
 
-        $fromAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['fromAccountId']);
+        $fromAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'fromAccountId') ?? '');
         if ($fromAccount === null) {
             $this->sender->sendMessage($chatId, $this->translator->trans('transfer.source_not_found'));
             $this->conversationManager->end($chatId);
@@ -144,7 +145,7 @@ class AddTransferConversation implements ConversationInterface
             return;
         }
 
-        $toAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), $data['toAccountId']);
+        $toAccount = $this->accountRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'toAccountId') ?? '');
         if ($toAccount === null) {
             $this->sender->sendMessage($chatId, $this->translator->trans('transfer.target_not_found'));
             $this->conversationManager->end($chatId);
@@ -155,10 +156,10 @@ class AddTransferConversation implements ConversationInterface
         $transaction = $this->transactionService->addTransfer(
             family:      $user->getFamily(),
             user:        $user,
-            amount:      (string) $data['amount'],
+            amount:      Payload::string($data, 'amount') ?? '0',
             from:        $fromAccount,
             to:          $toAccount,
-            description: $data['description'] ?? '',
+            description: Payload::string($data, 'description') ?? '',
         );
 
         $this->conversationManager->end($chatId);

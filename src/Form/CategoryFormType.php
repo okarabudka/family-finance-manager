@@ -7,6 +7,7 @@ namespace App\Form;
 use App\Entity\Category;
 use App\Entity\CategoryType;
 use App\Entity\Family;
+use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
@@ -50,7 +51,7 @@ class CategoryFormType extends AbstractType
             ])
             ->add('parent', EntityType::class, [
                 'class'         => Category::class,
-                'query_builder' => fn ($repo) => $repo->createFamilyQueryBuilder($family),
+                'query_builder' => fn (CategoryRepository $repo) => $repo->createFamilyQueryBuilder($family),
                 'label'         => 'category.form.parent',
                 'required'      => false,
                 'placeholder'   => 'common.none',

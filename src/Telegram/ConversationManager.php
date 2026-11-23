@@ -56,10 +56,15 @@ class ConversationManager
             return;
         }
 
-        /** @var array<string, mixed> $state */
-        $state = $item->get();
-        $conversation = $this->registry->get($state['class']);
-        $conversation->handle($chatId, $update, $state);
+        $state = Payload::stringKeys($item->get()) ?? [];
+        $class = Payload::string($state, 'class');
+        if ($class === null) {
+            $this->end($chatId);
+
+            return;
+        }
+
+        $this->registry->get($class)->handle($chatId, $update, $state);
     }
 
     /**
@@ -74,9 +79,7 @@ class ConversationManager
             return null;
         }
 
-        $value = $item->get();
-
-        return is_array($value) ? $value : null;
+        return Payload::stringKeys($item->get());
     }
 
     /**

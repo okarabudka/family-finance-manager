@@ -126,7 +126,7 @@ class BudgetController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_budget_' . $budget->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete_budget_' . $budget->getId(), $request->request->getString('_token'))) {
             $em->remove($budget);
             $em->flush();
             $this->addFlash('success', 'flash.budget.deleted');

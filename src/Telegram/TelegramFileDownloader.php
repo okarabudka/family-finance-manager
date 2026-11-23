@@ -35,13 +35,12 @@ class TelegramFileDownloader
 
             $data = $response->toArray();
 
-            if (!($data['ok'] ?? false) || empty($data['result']['file_path'])) {
+            $telegramFilePath = Payload::string($data, 'result', 'file_path');
+            if (true !== ($data['ok'] ?? false) || null === $telegramFilePath || '' === $telegramFilePath) {
                 $this->logger->error('Telegram getFile failed', ['file_id' => $fileId, 'data' => $data]);
 
                 return null;
             }
-
-            $telegramFilePath = $data['result']['file_path'];
 
             // Step 2: download the actual file bytes
             $fileResponse = $this->httpClient->request(

@@ -8,6 +8,7 @@ use App\Entity\Account;
 use App\Entity\Family;
 use App\Entity\SavingsGoal;
 use App\Entity\SavingsGoalStatus;
+use App\Repository\AccountRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -38,7 +39,7 @@ class SavingsGoalFormType extends AbstractType
             ])
             ->add('account', EntityType::class, [
                 'class'         => Account::class,
-                'query_builder' => fn ($repo) => $repo->createFamilyQueryBuilder($family),
+                'query_builder' => fn (AccountRepository $repo) => $repo->createFamilyQueryBuilder($family),
                 'label'         => 'savings_goal.form.account',
                 'choice_label'  => 'name',
             ])

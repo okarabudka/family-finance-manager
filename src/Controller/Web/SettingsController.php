@@ -40,8 +40,9 @@ class SettingsController extends AbstractController
         if ($profileForm->isSubmitted() && $profileForm->isValid()) {
             $newPassword = $profileForm->get('newPassword')->getData();
 
-            if ($newPassword !== null && $newPassword !== '') {
-                $currentPassword = $profileForm->get('currentPassword')->getData() ?? '';
+            if (\is_string($newPassword) && $newPassword !== '') {
+                $currentPassword = $profileForm->get('currentPassword')->getData();
+                $currentPassword = \is_string($currentPassword) ? $currentPassword : '';
 
                 if (!$this->passwordHasher->isPasswordValid($user, $currentPassword)) {
                     $this->addFlash('error', 'flash.settings.wrong_password');
@@ -98,21 +99,22 @@ class SettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
+            $name     = $form->get('name')->getData();
+            $email    = $form->get('email')->getData();
+            $role     = $form->get('roles')->getData();
+            $password = $form->get('password')->getData();
+            \assert(\is_string($name) && \is_string($email) && \is_string($role) && \is_string($password), 'guaranteed by the form constraints');
 
-            $existingUser = $this->em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+            $existingUser = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
             if ($existingUser !== null) {
                 $this->addFlash('error', 'flash.settings.email_taken');
 
                 return $this->redirectToRoute('settings_users_new');
             }
 
-            $role     = $form->get('roles')->getData();
-            $password = $form->get('password')->getData();
-
             $newUser = new User();
-            $newUser->setName($data['name']);
-            $newUser->setEmail($data['email']);
+            $newUser->setName($name);
+            $newUser->setEmail($email);
             $newUser->setPassword($this->passwordHasher->hashPassword($newUser, $password));
             $newUser->setRoles([$role]);
             $newUser->setFamily($family);

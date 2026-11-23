@@ -84,7 +84,7 @@ class MeterController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!$this->isCsrfTokenValid('delete_meter_' . $reading->getId(), $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('delete_meter_' . $reading->getId(), $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

@@ -69,6 +69,8 @@ class BotTranslator
 
     /**
      * Month and year in the current locale, e.g. "November 2026" / "Ноябрь 2026".
+     *
+     * @phpstan-impure depends on the translator locale
      */
     public function monthLabel(\DateTimeInterface $date): string
     {

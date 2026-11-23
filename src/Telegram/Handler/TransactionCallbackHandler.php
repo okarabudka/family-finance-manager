@@ -9,7 +9,6 @@ use App\Entity\Category;
 use App\Entity\CategoryType;
 use App\Entity\Family;
 use App\Entity\TransactionType;
-use App\Entity\User;
 use App\Repository\CategoryRepository;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
@@ -44,8 +43,8 @@ class TransactionCallbackHandler
 
         match ($parts[1] ?? '') {
             'delete'   => $this->handleDelete($chatId, $parts[2] ?? '', $user->getFamily()),
-            'category' => $this->handleCategoryMenu($chatId, $parts[2] ?? '', $user),
-            'assign'   => $this->handleAssign($chatId, $parts[2] ?? '', $parts[3] ?? '', $user),
+            'category' => $this->handleCategoryMenu($chatId, $parts[2] ?? '', $user->getFamily()),
+            'assign'   => $this->handleAssign($chatId, $parts[2] ?? '', $parts[3] ?? '', $user->getFamily()),
             default    => null,
         };
     }
@@ -70,10 +69,10 @@ class TransactionCallbackHandler
         );
     }
 
-    private function handleCategoryMenu(int $chatId, string $txId, User $user): void
+    private function handleCategoryMenu(int $chatId, string $txId, Family $family): void
     {
         $transaction = $this->txRepo->find($txId);
-        if ($transaction === null || !$transaction->getFamily()->getId()->equals($user->getFamily()->getId())) {
+        if ($transaction === null || !$transaction->getFamily()->getId()->equals($family->getId())) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
@@ -82,7 +81,7 @@ class TransactionCallbackHandler
         $catType    = $transaction->getType() === TransactionType::Income
             ? CategoryType::Income
             : CategoryType::Expense;
-        $categories = $this->categoryRepo->findByFamily($user->getFamily(), $catType);
+        $categories = $this->categoryRepo->findByFamily($family, $catType);
 
         if (empty($categories)) {
             $this->sender->sendMessage($chatId, $this->translator->trans('transaction.no_categories'));
@@ -104,16 +103,16 @@ class TransactionCallbackHandler
         $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_category'), ['inline_keyboard' => $rows]);
     }
 
-    private function handleAssign(int $chatId, string $txId, string $catId, User $user): void
+    private function handleAssign(int $chatId, string $txId, string $catId, Family $family): void
     {
         $transaction = $this->txRepo->find($txId);
-        if ($transaction === null || !$transaction->getFamily()->getId()->equals($user->getFamily()->getId())) {
+        if ($transaction === null || !$transaction->getFamily()->getId()->equals($family->getId())) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
 
-        $category = $this->categoryRepo->findByFamilyAndId($user->getFamily(), $catId);
+        $category = $this->categoryRepo->findByFamilyAndId($family, $catId);
         if ($category === null) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.category_not_found'));
 
