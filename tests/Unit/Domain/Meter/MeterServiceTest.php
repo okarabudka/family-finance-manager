@@ -11,8 +11,8 @@ use App\Entity\MeterType;
 use App\Entity\User;
 use App\Repository\MeterReadingRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 #[AllowMockObjectsWithoutExpectations]
@@ -27,8 +27,8 @@ class MeterServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->em      = $this->createMock(EntityManagerInterface::class);
-        $this->repo    = $this->createMock(MeterReadingRepository::class);
+        $this->em = $this->createMock(EntityManagerInterface::class);
+        $this->repo = $this->createMock(MeterReadingRepository::class);
         $this->service = new MeterService($this->em, $this->repo);
 
         $this->family = new Family();
@@ -60,10 +60,10 @@ class MeterServiceTest extends TestCase
         $this->em->expects(self::once())->method('flush');
 
         $result = $this->service->saveReading(
-            family:      $this->family,
-            createdBy:   $this->user,
-            type:        MeterType::Electricity,
-            value:       12345.67,
+            family: $this->family,
+            createdBy: $this->user,
+            type: MeterType::Electricity,
+            value: 12345.67,
             readingDate: new \DateTimeImmutable('2025-06-01'),
         );
 
@@ -80,13 +80,13 @@ class MeterServiceTest extends TestCase
         $this->em->method('flush');
 
         $result = $this->service->saveReading(
-            family:      $this->family,
-            createdBy:   $this->user,
-            type:        MeterType::Water,
-            value:       234.5,
+            family: $this->family,
+            createdBy: $this->user,
+            type: MeterType::Water,
+            value: 234.5,
             readingDate: new \DateTimeImmutable('2025-06-01'),
-            photoPath:   '/uploads/meters/abc.jpg',
-            notes:       'Read after repairs',
+            photoPath: '/uploads/meters/abc.jpg',
+            notes: 'Read after repairs',
         );
 
         self::assertSame('/uploads/meters/abc.jpg', $result->getPhotoPath());
@@ -155,7 +155,7 @@ class MeterServiceTest extends TestCase
 
     public function testConsumptionRoundedToTwoDecimals(): void
     {
-        $r1 = $this->makeReading(100.0,   '2025-05-01');
+        $r1 = $this->makeReading(100.0, '2025-05-01');
         $r2 = $this->makeReading(100.333, '2025-06-01');
         $this->repo->method('findByFamilyAndType')->willReturn([$r1, $r2]);
 
@@ -168,7 +168,7 @@ class MeterServiceTest extends TestCase
     {
         // Meter was replaced or manually corrected to a lower value
         $r1 = $this->makeReading(10200.0, '2025-05-01');
-        $r2 = $this->makeReading(100.0,   '2025-06-01');
+        $r2 = $this->makeReading(100.0, '2025-06-01');
         $this->repo->method('findByFamilyAndType')->willReturn([$r1, $r2]);
 
         $result = $this->service->getReadingsWithConsumption($this->family, MeterType::Electricity);
@@ -241,7 +241,7 @@ class MeterServiceTest extends TestCase
 
     public function testChartDataValuesRoundedToTwoDecimals(): void
     {
-        $r1 = $this->makeReading(0.0,     '2025-05-01');
+        $r1 = $this->makeReading(0.0, '2025-05-01');
         $r2 = $this->makeReading(33.3333, '2025-06-01');
         $this->repo->method('findByFamilyAndType')->willReturn([$r1, $r2]);
 

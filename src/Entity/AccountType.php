@@ -9,9 +9,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum AccountType: string implements TranslatableInterface
 {
-    case Checking   = 'checking';
-    case Savings    = 'savings';
-    case Cash       = 'cash';
+    case Checking = 'checking';
+    case Savings = 'savings';
+    case Cash = 'cash';
     case CreditCard = 'credit_card';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string

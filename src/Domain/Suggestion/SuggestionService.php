@@ -17,7 +17,8 @@ class SuggestionService
         private readonly TransactionRepository $txRepo,
         private readonly CategoryRepository $categoryRepo,
         private readonly TranslatorInterface $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * Returns a list of suggestions/recommendations for the family.
@@ -40,12 +41,12 @@ class SuggestionService
             $prevTo,
         );
 
-        $currency    = $family->getCurrency();
+        $currency = $family->getCurrency();
         $suggestions = [];
 
         // 1. Categories with abnormal growth (> 30%)
         foreach ($comparison->categoryComparisons as $comp) {
-            if ($comp->diffPercent !== null && $comp->diffPercent > 30 && $comp->diff > 20) {
+            if (null !== $comp->diffPercent && $comp->diffPercent > 30 && $comp->diff > 20) {
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::ExpenseSpike,
                     priority: SuggestionPriority::High,
@@ -53,9 +54,9 @@ class SuggestionService
                         '%category%' => $comp->category->getName(),
                     ]),
                     message: $this->translator->trans('suggestion.expense_spike.message', [
-                        '%current%'  => sprintf('%.0f', $comp->currentAmount),
+                        '%current%' => sprintf('%.0f', $comp->currentAmount),
                         '%previous%' => sprintf('%.0f', $comp->previousAmount),
-                        '%percent%'  => sprintf('%.0f', $comp->diffPercent),
+                        '%percent%' => sprintf('%.0f', $comp->diffPercent),
                         '%currency%' => $currency,
                         '%category%' => $comp->category->getName(),
                     ]),
@@ -67,7 +68,7 @@ class SuggestionService
 
         // 2. Budget exceeded
         foreach ($comparison->current->byCategory as $catReport) {
-            if ($catReport->budgetUsedPercent !== null && $catReport->budgetUsedPercent > 100) {
+            if (null !== $catReport->budgetUsedPercent && $catReport->budgetUsedPercent > 100) {
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::BudgetExceeded,
                     priority: SuggestionPriority::High,
@@ -76,9 +77,9 @@ class SuggestionService
                     ]),
                     message: $this->translator->trans('suggestion.budget_exceeded.message', [
                         '%category%' => $catReport->category->getName(),
-                        '%percent%'  => sprintf('%.0f', $catReport->budgetUsedPercent - 100),
-                        '%spent%'    => sprintf('%.0f', $catReport->amount),
-                        '%planned%'  => sprintf('%.0f', $catReport->budgetAmount),
+                        '%percent%' => sprintf('%.0f', $catReport->budgetUsedPercent - 100),
+                        '%spent%' => sprintf('%.0f', $catReport->amount),
+                        '%planned%' => sprintf('%.0f', $catReport->budgetAmount),
                         '%currency%' => $currency,
                     ]),
                     category: $catReport->category,
@@ -95,8 +96,8 @@ class SuggestionService
                 priority: SuggestionPriority::Critical,
                 title: $this->translator->trans('suggestion.negative_balance.title'),
                 message: $this->translator->trans('suggestion.negative_balance.message', [
-                    '%days%'     => $daysLeft,
-                    '%amount%'   => sprintf('%.0f', abs($comparison->current->balance)),
+                    '%days%' => $daysLeft,
+                    '%amount%' => sprintf('%.0f', abs($comparison->current->balance)),
                     '%currency%' => $currency,
                 ]),
             );
@@ -122,7 +123,7 @@ class SuggestionService
             $hasThisMonth = $this->txRepo->hasCategoryTransactionThisMonth($family, $categoryId);
             if (!$hasThisMonth) {
                 $category = $this->categoryRepo->find($categoryId);
-                if ($category === null) {
+                if (null === $category) {
                     continue;
                 }
                 $suggestions[] = new Suggestion(

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Telegram\Handler;
 
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\RegisterConversation;
 use App\Telegram\ConversationManager;
 use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class StartCommandHandler implements CommandHandlerInterface
 {
@@ -19,15 +19,16 @@ class StartCommandHandler implements CommandHandlerInterface
         private readonly TelegramSender $sender,
         private readonly ConversationManager $conversationManager,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
         $telegramUser = Payload::array($update, 'message', 'from');
-        $user         = $this->userRepo->findByTelegramChatId($chatId);
+        $user = $this->userRepo->findByTelegramChatId($chatId);
 
-        if ($user !== null) {
+        if (null !== $user) {
             $this->sender->sendMessage($chatId, $this->translator->trans('start.welcome_back', ['%name%' => $user->getName()]));
             $this->sendMainMenu($chatId);
 
@@ -51,7 +52,7 @@ class StartCommandHandler implements CommandHandlerInterface
                 [['text' => '/add'],     ['text' => '/income']],
                 [['text' => '/help']],
             ],
-            'resize_keyboard'   => true,
+            'resize_keyboard' => true,
             'one_time_keyboard' => false,
         ];
 

@@ -15,5 +15,6 @@ readonly class Suggestion
         public string $message,
         public ?Category $category = null,
         public ?float $amount = null,
-    ) {}
+    ) {
+    }
 }

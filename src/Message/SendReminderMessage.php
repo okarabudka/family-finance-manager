@@ -8,5 +8,6 @@ final readonly class SendReminderMessage
 {
     public function __construct(
         public string $reminderTemplateId,
-    ) {}
+    ) {
+    }
 }

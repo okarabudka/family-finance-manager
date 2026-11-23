@@ -51,7 +51,7 @@ class CreateUserCommand extends Command
         $isAdmin = (bool) $input->getOption('admin');
 
         $family = new Family();
-        $family->setName($name . "'s Family");
+        $family->setName($name."'s Family");
 
         $user = new User();
         $user->setEmail($email);

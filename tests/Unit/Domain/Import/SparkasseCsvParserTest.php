@@ -31,7 +31,7 @@ class SparkasseCsvParserTest extends TestCase
             '"DE123";"15.03.25";"15.03.25";"Gutschrift";"Arbeitgeber GmbH";"Gehalt März";"";"";"";"";"";"";"2.500,00";"EUR"',
         ]);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_') . '.csv';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_').'.csv';
         file_put_contents($tmpFile, $csv);
 
         try {
@@ -58,7 +58,7 @@ class SparkasseCsvParserTest extends TestCase
             '"DE123";"01.03.25";"01.03.25";"Lastschrift";"REWE";"REWE Supermarkt";"";"";"";"";"";"";"";""',
         ]);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_') . '.csv';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_').'.csv';
         file_put_contents($tmpFile, $csv);
 
         try {
@@ -82,7 +82,7 @@ class SparkasseCsvParserTest extends TestCase
             '"DE123";"10.06.25";"10.06.25";"Lastschrift";"Lidl";"Einkauf";"";"";"";"";"";"";""-1.234,56";"EUR"',
         ]);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_') . '.csv';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sparkasse_').'.csv';
         file_put_contents($tmpFile, $csv);
 
         try {

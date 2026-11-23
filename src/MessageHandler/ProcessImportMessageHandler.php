@@ -15,13 +15,14 @@ class ProcessImportMessageHandler
     public function __construct(
         private readonly ImportFileRepository $importFileRepo,
         private readonly ImportProcessor $processor,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ProcessImportMessage $message): void
     {
         $importFile = $this->importFileRepo->find($message->importFileId);
 
-        if ($importFile === null) {
+        if (null === $importFile) {
             // ImportFile may have been deleted before the message was processed
             return;
         }

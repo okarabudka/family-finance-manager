@@ -65,7 +65,7 @@ class TransactionRepository extends ServiceEntityRepository
             ->setParameter('to', $to)
             ->orderBy('t.executedAt', 'DESC');
 
-        if ($type !== null) {
+        if (null !== $type) {
             $qb->andWhere('t.type = :type')->setParameter('type', $type);
         }
 
@@ -78,8 +78,7 @@ class TransactionRepository extends ServiceEntityRepository
         \DateTimeImmutable $from,
         \DateTimeImmutable $to,
     ): array {
-        /** @var list<array{categoryId: string|null, total: string|null}> */
-        return $this->createQueryBuilder('t')
+        $rows = $this->createQueryBuilder('t')
             ->select('IDENTITY(t.category) as categoryId, SUM(t.amount) as total')
             ->where('t.family = :family')
             ->andWhere('t.executedAt BETWEEN :from AND :to')
@@ -93,6 +92,9 @@ class TransactionRepository extends ServiceEntityRepository
             ->groupBy('t.category')
             ->getQuery()
             ->getArrayResult();
+
+        /** @var list<array{categoryId: string|null, total: string|null}> $rows */
+        return $rows;
     }
 
     /** @return Transaction[] */
@@ -155,9 +157,9 @@ class TransactionRepository extends ServiceEntityRepository
 
         $rows = $this->getEntityManager()->getConnection()->executeQuery($sql, [
             'familyId' => (string) $family->getId(),
-            'from'     => $from,
-            'type'     => TransactionType::Expense->value,
-            'months'   => $months,
+            'from' => $from,
+            'type' => TransactionType::Expense->value,
+            'months' => $months,
         ])->fetchFirstColumn();
 
         return array_values(array_filter($rows, \is_string(...)));
@@ -170,7 +172,7 @@ class TransactionRepository extends ServiceEntityRepository
     {
         $now = new \DateTimeImmutable();
         $from = new \DateTimeImmutable($now->format('Y-m-01'));
-        $to   = new \DateTimeImmutable($now->format('Y-m-t') . ' 23:59:59');
+        $to = new \DateTimeImmutable($now->format('Y-m-t').' 23:59:59');
 
         $count = $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')
@@ -200,7 +202,7 @@ class TransactionRepository extends ServiceEntityRepository
             ->orderBy('t.executedAt', 'DESC');
 
         $type = TransactionType::tryFrom($filters['type'] ?? '');
-        if ($type !== null) {
+        if (null !== $type) {
             $qb->andWhere('t.type = :type')
                ->setParameter('type', $type);
         }
@@ -210,13 +212,13 @@ class TransactionRepository extends ServiceEntityRepository
         }
         if (!empty($filters['from'])) {
             $fromDate = \DateTimeImmutable::createFromFormat('Y-m-d', $filters['from']);
-            if ($fromDate !== false) {
+            if (false !== $fromDate) {
                 $qb->andWhere('t.executedAt >= :from')->setParameter('from', $fromDate);
             }
         }
         if (!empty($filters['to'])) {
             $toDate = \DateTimeImmutable::createFromFormat('Y-m-d', $filters['to']);
-            if ($toDate !== false) {
+            if (false !== $toDate) {
                 $qb->andWhere('t.executedAt <= :to')->setParameter('to', $toDate);
             }
         }

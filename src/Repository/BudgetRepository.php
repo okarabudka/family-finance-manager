@@ -23,10 +23,10 @@ class BudgetRepository extends ServiceEntityRepository
     public function findForMonth(Family $family, Category $category, int $year, int $month): ?Budget
     {
         return $this->findOneBy([
-            'family'   => $family,
+            'family' => $family,
             'category' => $category,
-            'year'     => $year,
-            'month'    => $month,
+            'year' => $year,
+            'month' => $month,
         ]);
     }
 

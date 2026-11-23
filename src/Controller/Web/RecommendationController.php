@@ -23,10 +23,10 @@ class RecommendationController extends AbstractController
         RecommendationRepository $recommendationRepository,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -44,14 +44,14 @@ class RecommendationController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$recommendation->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$recommendation->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('mark_seen_' . $recommendation->getId(), $request->request->getString('_token'))) {
+        if ($this->isCsrfTokenValid('mark_seen_'.$recommendation->getId(), $request->request->getString('_token'))) {
             $recommendation->setSeenByUser(true);
             $em->flush();
             $this->addFlash('success', 'flash.recommendation.seen');

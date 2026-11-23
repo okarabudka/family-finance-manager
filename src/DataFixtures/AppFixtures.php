@@ -109,7 +109,7 @@ final class AppFixtures extends Fixture
             $manager->persist($category);
             $this->categories[$name] = $category;
 
-            if ($keywords !== []) {
+            if ([] !== $keywords) {
                 $manager->persist((new CategoryRule())
                     ->setFamily($family)
                     ->setCategory($category)

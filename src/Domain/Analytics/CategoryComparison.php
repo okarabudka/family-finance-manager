@@ -14,5 +14,6 @@ readonly class CategoryComparison
         public float $previousAmount,
         public float $diff,
         public ?float $diffPercent,
-    ) {}
+    ) {
+    }
 }

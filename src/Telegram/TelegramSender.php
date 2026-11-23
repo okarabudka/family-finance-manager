@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Telegram;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class TelegramSender
@@ -16,7 +15,8 @@ class TelegramSender
         private readonly HttpClientInterface $httpClient,
         private readonly string $botToken,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed>|null $replyMarkup
@@ -29,14 +29,14 @@ class TelegramSender
     ): void {
         $params = [
             'chat_id' => $chatId,
-            'text'    => $text,
+            'text' => $text,
         ];
 
-        if ($parseMode !== '') {
+        if ('' !== $parseMode) {
             $params['parse_mode'] = $parseMode;
         }
 
-        if ($replyMarkup !== null) {
+        if (null !== $replyMarkup) {
             // Pass as array — Symfony HttpClient serialises it via ['json' => ...] automatically
             $params['reply_markup'] = $replyMarkup;
         }
@@ -50,13 +50,13 @@ class TelegramSender
         try {
             $this->httpClient->request(
                 'POST',
-                self::API_BASE . $this->botToken . '/sendMessage',
+                self::API_BASE.$this->botToken.'/sendMessage',
                 ['json' => $params],
             )->getContent(); // trigger the actual HTTP call
         } catch (\Throwable $e) {
             $this->logger->error('Telegram sendMessage failed', [
                 'chatId' => $chatId,
-                'error'  => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -71,18 +71,18 @@ class TelegramSender
 
         try {
             $resource = fopen($photoPath, 'r');
-            if ($resource === false) {
+            if (false === $resource) {
                 throw new \RuntimeException("Cannot open file: $photoPath");
             }
 
             $this->httpClient->request(
                 'POST',
-                self::API_BASE . $this->botToken . '/sendPhoto',
+                self::API_BASE.$this->botToken.'/sendPhoto',
                 [
                     'body' => [
                         'chat_id' => (string) $chatId,
                         'caption' => $caption,
-                        'photo'   => $resource,
+                        'photo' => $resource,
                     ],
                 ],
             )->getContent();
@@ -94,8 +94,8 @@ class TelegramSender
             }
             $this->logger->error('Telegram sendPhoto failed', [
                 'chatId' => $chatId,
-                'path'   => $photoPath,
-                'error'  => $e->getMessage(),
+                'path' => $photoPath,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -109,13 +109,13 @@ class TelegramSender
         try {
             $this->httpClient->request(
                 'POST',
-                self::API_BASE . $this->botToken . '/answerCallbackQuery',
+                self::API_BASE.$this->botToken.'/answerCallbackQuery',
                 ['json' => ['callback_query_id' => $callbackQueryId, 'text' => $text]],
             )->getContent();
         } catch (\Throwable $e) {
             $this->logger->error('Telegram answerCallbackQuery failed', [
                 'callbackQueryId' => $callbackQueryId,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -131,16 +131,16 @@ class TelegramSender
         string $parseMode = '',
     ): void {
         $params = [
-            'chat_id'    => $chatId,
+            'chat_id' => $chatId,
             'message_id' => $messageId,
-            'text'       => $text,
+            'text' => $text,
         ];
 
-        if ($parseMode !== '') {
+        if ('' !== $parseMode) {
             $params['parse_mode'] = $parseMode;
         }
 
-        if ($replyMarkup !== null) {
+        if (null !== $replyMarkup) {
             $params['reply_markup'] = $replyMarkup;
         }
 
@@ -153,14 +153,14 @@ class TelegramSender
         try {
             $this->httpClient->request(
                 'POST',
-                self::API_BASE . $this->botToken . '/editMessageText',
+                self::API_BASE.$this->botToken.'/editMessageText',
                 ['json' => $params],
             )->getContent();
         } catch (\Throwable $e) {
             $this->logger->error('Telegram editMessageText failed', [
-                'chatId'    => $chatId,
+                'chatId' => $chatId,
                 'messageId' => $messageId,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -170,15 +170,15 @@ class TelegramSender
      */
     private function isOffline(): bool
     {
-        return $this->botToken === '';
+        return '' === $this->botToken;
     }
 
     /** @param array<string, mixed> $params */
     private function logOffline(string $method, array $params): void
     {
         $this->logger->info('Telegram reply (offline) {method}: {text}', [
-            'method'       => $method,
-            'text'         => $params['text'] ?? $params['caption'] ?? '',
+            'method' => $method,
+            'text' => $params['text'] ?? $params['caption'] ?? '',
             'reply_markup' => $params['reply_markup'] ?? null,
         ]);
     }

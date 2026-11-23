@@ -27,9 +27,9 @@ class SendRemindersCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $now       = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable();
         $templates = $this->reminderTemplateRepository->findAllActive();
-        $sent      = 0;
+        $sent = 0;
 
         foreach ($templates as $template) {
             if (!$template->isDue($now)) {
@@ -38,7 +38,7 @@ class SendRemindersCommand extends Command
 
             $this->messageBus->dispatch(new SendReminderMessage((string) $template->getId()));
             $output->writeln(sprintf('Dispatched: %s', $template->getName()));
-            $sent++;
+            ++$sent;
         }
 
         $output->writeln(sprintf('Done. Dispatched %d reminder(s).', $sent));

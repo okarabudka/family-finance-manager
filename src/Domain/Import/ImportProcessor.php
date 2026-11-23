@@ -24,7 +24,8 @@ class ImportProcessor
         private readonly ImportTransactionRepository $importTxRepo,
         private readonly EntityManagerInterface $em,
         private readonly TelegramNotifier $notifier,
-    ) {}
+    ) {
+    }
 
     public function process(ImportFile $importFile): void
     {
@@ -38,15 +39,15 @@ class ImportProcessor
             $importFile->setTotalRows(count($rawTransactions));
 
             $imported = 0;
-            $skipped  = 0;
-            $pending  = 0;
+            $skipped = 0;
+            $pending = 0;
 
             foreach ($rawTransactions as $rawTx) {
                 $hash = $this->calculateHash($rawTx, $importFile->getAccount());
 
                 // Deduplication: skip transactions we have already imported
                 if ($this->importTxRepo->hashExists($hash)) {
-                    $skipped++;
+                    ++$skipped;
                     continue;
                 }
 
@@ -69,15 +70,15 @@ class ImportProcessor
 
                 $importTx->setSuggestedCategory($category);
 
-                if ($category !== null) {
+                if (null !== $category) {
                     // Category recognised — create the transaction immediately
                     $importTx->setStatus(ImportTransactionStatus::AutoImported);
                     $this->createTransactionFromImport($importTx, $importFile);
-                    $imported++;
+                    ++$imported;
                 } else {
                     // Needs manual confirmation
                     $importTx->setStatus(ImportTransactionStatus::Pending);
-                    $pending++;
+                    ++$pending;
                 }
 
                 $this->em->persist($importTx);
@@ -92,7 +93,6 @@ class ImportProcessor
 
             // Notify user about the completed import
             $this->notifier->notifyImportComplete($importFile, $pending);
-
         } catch (\Throwable $e) {
             $importFile
                 ->setStatus(ImportStatus::Failed)
@@ -119,9 +119,9 @@ class ImportProcessor
     {
         // amount is stored as string in the entity; addIncome/addExpense also accept string
         $rawAmount = $importTx->getAmount();
-        $account   = $importFile->getAccount();
-        $family    = $account->getFamily();
-        $user      = $importFile->getUploadedBy();
+        $account = $importFile->getAccount();
+        $family = $account->getFamily();
+        $user = $importFile->getUploadedBy();
 
         if ((float) $rawAmount > 0) {
             $this->transactionService->addIncome(

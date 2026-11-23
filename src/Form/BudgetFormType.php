@@ -24,22 +24,22 @@ class BudgetFormType extends AbstractType
 
         $builder
             ->add('category', EntityType::class, [
-                'class'         => Category::class,
+                'class' => Category::class,
                 'query_builder' => fn (CategoryRepository $repo) => $repo->createFamilyQueryBuilder($family),
-                'label'         => 'budget.form.category',
-                'choice_label'  => 'name',
+                'label' => 'budget.form.category',
+                'choice_label' => 'name',
             ])
             ->add('plannedAmount', MoneyType::class, [
                 'currency' => $family->getCurrency(),
-                'label'    => 'budget.form.planned_amount',
+                'label' => 'budget.form.planned_amount',
             ])
             ->add('year', TextType::class, [
                 'label' => 'budget.form.year',
-                'attr'  => ['placeholder' => (string) date('Y')],
+                'attr' => ['placeholder' => (string) date('Y')],
             ])
             ->add('month', TextType::class, [
                 'label' => 'budget.form.month',
-                'attr'  => ['placeholder' => (string) date('n')],
+                'attr' => ['placeholder' => (string) date('n')],
             ]);
     }
 

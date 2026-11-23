@@ -22,5 +22,6 @@ final readonly class SendNotificationMessage
 
         /** @var array<string, mixed> Optional extra context data for template rendering */
         public array $context = [],
-    ) {}
+    ) {
+    }
 }

@@ -41,26 +41,26 @@ class CategoryFormType extends AbstractType
                 'label' => 'category.form.type',
             ])
             ->add('icon', TextType::class, [
-                'label'    => 'category.form.icon',
+                'label' => 'category.form.icon',
                 'required' => false,
-                'attr'     => ['placeholder' => 'category.form.icon_placeholder', 'maxlength' => 10],
+                'attr' => ['placeholder' => 'category.form.icon_placeholder', 'maxlength' => 10],
             ])
             ->add('color', ColorType::class, [
-                'label'    => 'category.form.color',
+                'label' => 'category.form.color',
                 'required' => false,
             ])
             ->add('parent', EntityType::class, [
-                'class'         => Category::class,
+                'class' => Category::class,
                 'query_builder' => fn (CategoryRepository $repo) => $repo->createFamilyQueryBuilder($family),
-                'label'         => 'category.form.parent',
-                'required'      => false,
-                'placeholder'   => 'common.none',
-                'choice_label'  => 'name',
+                'label' => 'category.form.parent',
+                'required' => false,
+                'placeholder' => 'common.none',
+                'choice_label' => 'name',
             ])
             ->add('sortOrder', IntegerType::class, [
-                'label'    => 'common.sort_order',
+                'label' => 'common.sort_order',
                 'required' => false,
-                'data'     => 0,
+                'data' => 0,
             ]);
     }
 

@@ -29,7 +29,7 @@ class AccountController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -55,7 +55,7 @@ class AccountController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -74,7 +74,7 @@ class AccountController extends AbstractController
         }
 
         return $this->render('account/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'account.new',
         ]);
     }
@@ -90,7 +90,7 @@ class AccountController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$account->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$account->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
@@ -107,8 +107,8 @@ class AccountController extends AbstractController
         }
 
         return $this->render('account/form.html.twig', [
-            'form'    => $form,
-            'title'   => 'account.edit',
+            'form' => $form,
+            'title' => 'account.edit',
             'account' => $account,
         ]);
     }

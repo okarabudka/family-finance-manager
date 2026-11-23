@@ -31,8 +31,8 @@ class TelegramSetWebhookCommand extends Command
 
         $response = $this->httpClient->request('POST', $url, [
             'json' => [
-                'url'             => $this->webhookUrl,
-                'secret_token'    => $this->webhookSecret,
+                'url' => $this->webhookUrl,
+                'secret_token' => $this->webhookSecret,
                 'allowed_updates' => ['message', 'callback_query'],
             ],
         ]);

@@ -22,28 +22,28 @@ class ProfileFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'user.form.name',
+                'label' => 'user.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
-                'label'       => 'user.form.email',
+                'label' => 'user.form.email',
                 'constraints' => [new NotBlank(), new Email()],
             ])
             ->add('currentPassword', PasswordType::class, [
-                'label'    => 'user.form.current_password',
-                'mapped'   => false,
+                'label' => 'user.form.current_password',
+                'mapped' => false,
                 'required' => false,
-                'attr'     => ['autocomplete' => 'current-password'],
-                'help'     => 'user.form.current_password_help',
+                'attr' => ['autocomplete' => 'current-password'],
+                'help' => 'user.form.current_password_help',
             ])
             ->add('newPassword', RepeatedType::class, [
-                'type'            => PasswordType::class,
-                'mapped'          => false,
-                'required'        => false,
-                'first_options'   => ['label' => 'user.form.new_password', 'attr' => ['autocomplete' => 'new-password']],
-                'second_options'  => ['label' => 'user.form.new_password_confirm', 'attr' => ['autocomplete' => 'new-password']],
+                'type' => PasswordType::class,
+                'mapped' => false,
+                'required' => false,
+                'first_options' => ['label' => 'user.form.new_password', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options' => ['label' => 'user.form.new_password_confirm', 'attr' => ['autocomplete' => 'new-password']],
                 'invalid_message' => 'user.password.mismatch',
-                'constraints'     => [new Length(min: 6)],
+                'constraints' => [new Length(min: 6)],
             ]);
     }
 
@@ -51,7 +51,7 @@ class ProfileFormType extends AbstractType
     {
         $resolver->setDefaults([
             'csrf_protection' => true,
-            'csrf_token_id'   => 'profile',
+            'csrf_token_id' => 'profile',
         ]);
     }
 }

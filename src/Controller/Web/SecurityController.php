@@ -15,7 +15,7 @@ class SecurityController extends AbstractController
     #[Route('/', name: 'app_home')]
     public function home(): Response
     {
-        if ($this->getUser() !== null) {
+        if (null !== $this->getUser()) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -25,7 +25,7 @@ class SecurityController extends AbstractController
     #[Route('/login', name: 'app_login', methods: ['GET', 'POST'])]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
-        if ($this->getUser() !== null) {
+        if (null !== $this->getUser()) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -37,7 +37,7 @@ class SecurityController extends AbstractController
         ]);
 
         return $this->render('security/login.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'error' => $error,
         ]);
     }

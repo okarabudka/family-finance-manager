@@ -11,7 +11,8 @@ class ConversationRegistry
      */
     public function __construct(
         private readonly array $conversations,
-    ) {}
+    ) {
+    }
 
     public function get(string $class): ConversationInterface
     {

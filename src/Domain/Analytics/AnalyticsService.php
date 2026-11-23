@@ -18,7 +18,8 @@ class AnalyticsService
         private readonly CategoryRepository $categoryRepo,
         private readonly BudgetRepository $budgetRepo,
         private readonly CacheInterface $cache,
-    ) {}
+    ) {
+    }
 
     /**
      * Monthly report: income, expenses, breakdown by category.
@@ -46,7 +47,7 @@ class AnalyticsService
         foreach ($expenses as $row) {
             $category = $this->categoryRepo->find($row['categoryId']);
             // Category may have been deleted — skip orphaned transactions
-            if ($category === null) {
+            if (null === $category) {
                 continue;
             }
             $budget = $this->budgetRepo->findForMonth(
@@ -96,7 +97,7 @@ class AnalyticsService
         $comparisons = [];
         foreach ($current->byCategory as $currentCat) {
             $prevCat = $this->findCategoryInReport($previous, $currentCat->category);
-            $prevAmount = $prevCat !== null ? $prevCat->amount : 0;
+            $prevAmount = null !== $prevCat ? $prevCat->amount : 0;
             $diff = $currentCat->amount - $prevAmount;
             $diffPercent = $prevAmount > 0 ? ($diff / $prevAmount * 100) : null;
 
@@ -146,7 +147,7 @@ class AnalyticsService
         $result = [];
         $now = new \DateTimeImmutable();
 
-        for ($i = $months - 1; $i >= 0; $i--) {
+        for ($i = $months - 1; $i >= 0; --$i) {
             $date = $now->modify("-{$i} months");
             $from = new \DateTimeImmutable($date->format('Y-m-01'));
             $to = new \DateTimeImmutable($date->format('Y-m-t'));
@@ -158,10 +159,10 @@ class AnalyticsService
             $income = $this->txRepo->sumByType($family, $from, $to, TransactionType::Income);
 
             $result[] = [
-                'month'    => $date->format('M Y'),
+                'month' => $date->format('M Y'),
                 'expenses' => $expenses,
-                'income'   => $income,
-                'balance'  => $income - $expenses,
+                'income' => $income,
+                'balance' => $income - $expenses,
             ];
         }
 

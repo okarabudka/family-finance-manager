@@ -14,5 +14,6 @@ readonly class MonthlyReport
         public float $balance,
         /** @var CategoryReport[] */
         public array $byCategory,
-    ) {}
+    ) {
+    }
 }

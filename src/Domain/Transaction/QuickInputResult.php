@@ -14,5 +14,6 @@ final class QuickInputResult
         public readonly string $amount,
         /** Human-readable description / merchant hint */
         public readonly string $description,
-    ) {}
+    ) {
+    }
 }

@@ -29,23 +29,23 @@ class MeterController extends AbstractController
         MeterService $meterService,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
         $electricityReadings = $meterService->getReadingsWithConsumption($family, MeterType::Electricity);
-        $waterReadings       = $meterService->getReadingsWithConsumption($family, MeterType::Water);
-        $electricityChart    = $meterService->getChartData($family, MeterType::Electricity);
-        $waterChart          = $meterService->getChartData($family, MeterType::Water);
+        $waterReadings = $meterService->getReadingsWithConsumption($family, MeterType::Water);
+        $electricityChart = $meterService->getChartData($family, MeterType::Electricity);
+        $waterChart = $meterService->getChartData($family, MeterType::Water);
 
         return $this->render('meter/list.html.twig', [
             'electricityReadings' => $electricityReadings,
-            'waterReadings'       => $waterReadings,
-            'electricityChart'    => $electricityChart,
-            'waterChart'          => $waterChart,
+            'waterReadings' => $waterReadings,
+            'electricityChart' => $electricityChart,
+            'waterChart' => $waterChart,
         ]);
     }
 
@@ -55,13 +55,13 @@ class MeterController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        if ($user->getFamily() === null || !$reading->getFamily()->getId()->equals($user->getFamily()->getId())) {
+        if (null === $user->getFamily() || !$reading->getFamily()->getId()->equals($user->getFamily()->getId())) {
             throw $this->createAccessDeniedException();
         }
 
         $path = $reading->getPhotoPath();
 
-        if ($path === null || !file_exists($path)) {
+        if (null === $path || !file_exists($path)) {
             throw $this->createNotFoundException('Photo not found.');
         }
 
@@ -80,11 +80,11 @@ class MeterController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        if ($user->getFamily() === null || !$reading->getFamily()->getId()->equals($user->getFamily()->getId())) {
+        if (null === $user->getFamily() || !$reading->getFamily()->getId()->equals($user->getFamily()->getId())) {
             throw $this->createAccessDeniedException();
         }
 
-        if (!$this->isCsrfTokenValid('delete_meter_' . $reading->getId(), $request->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid('delete_meter_'.$reading->getId(), $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

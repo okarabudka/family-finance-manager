@@ -11,5 +11,6 @@ readonly class PeriodComparison
         public MonthlyReport $previous,
         /** @var CategoryComparison[] */
         public array $categoryComparisons,
-    ) {}
+    ) {
+    }
 }

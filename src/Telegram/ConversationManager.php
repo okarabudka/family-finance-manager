@@ -25,7 +25,8 @@ class ConversationManager
         private readonly CacheInterface $cache,
         private readonly CacheItemPoolInterface $cachePool,
         private readonly ConversationRegistry $registry,
-    ) {}
+    ) {
+    }
 
     /**
      * Starts a new conversation for the given chat, replacing any existing one.
@@ -36,8 +37,8 @@ class ConversationManager
     {
         $state = [
             'class' => $conversationClass,
-            'step'  => 0,
-            'data'  => $data,
+            'step' => 0,
+            'data' => $data,
         ];
 
         $this->save($chatId, $state);
@@ -58,7 +59,7 @@ class ConversationManager
 
         $state = Payload::stringKeys($item->get()) ?? [];
         $class = Payload::string($state, 'class');
-        if ($class === null) {
+        if (null === $class) {
             $this->end($chatId);
 
             return;
@@ -112,6 +113,6 @@ class ConversationManager
 
     private function key(int $chatId): string
     {
-        return 'conversation_' . $chatId;
+        return 'conversation_'.$chatId;
     }
 }

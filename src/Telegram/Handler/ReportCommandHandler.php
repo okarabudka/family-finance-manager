@@ -9,9 +9,9 @@ use App\Domain\Analytics\CategoryReport;
 use App\Domain\Analytics\ChartGenerator;
 use App\Entity\Family;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class ReportCommandHandler implements CommandHandlerInterface
 {
@@ -21,47 +21,48 @@ class ReportCommandHandler implements CommandHandlerInterface
         private readonly ChartGenerator $chartGenerator,
         private readonly TelegramSender $sender,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
         }
 
-        $now  = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable();
         $from = $now->modify('first day of this month')->setTime(0, 0);
-        $to   = $now->modify('last day of this month')->setTime(23, 59, 59);
+        $to = $now->modify('last day of this month')->setTime(23, 59, 59);
 
         // getMonthlyReport() returns MonthlyReport object — access via object properties, NOT array keys
         $report = $this->analyticsService->getMonthlyReport($user->getFamily(), $from, $to);
 
         $monthLabel = $this->translator->monthLabel($now);
 
-        $totalIncome    = number_format($report->totalIncome, 2, '.', ' ');
-        $totalExpenses  = number_format($report->totalExpenses, 2, '.', ' ');
-        $balance        = number_format($report->balance, 2, '.', ' ');
+        $totalIncome = number_format($report->totalIncome, 2, '.', ' ');
+        $totalExpenses = number_format($report->totalExpenses, 2, '.', ' ');
+        $balance = number_format($report->balance, 2, '.', ' ');
 
         $currency = $user->getFamily()->getCurrency();
 
         $text = $this->translator->trans('report.summary', [
-            '%month%'    => $monthLabel,
-            '%income%'   => "{$totalIncome} {$currency}",
+            '%month%' => $monthLabel,
+            '%income%' => "{$totalIncome} {$currency}",
             '%expenses%' => "{$totalExpenses} {$currency}",
-            '%balance%'  => "{$balance} {$currency}",
+            '%balance%' => "{$balance} {$currency}",
         ])."\n";
 
         if (count($report->byCategory) > 0) {
             $text .= "\n".$this->translator->trans('report.by_category')."\n";
 
             foreach ($report->byCategory as $item) {
-                $pct    = round($item->percent);
+                $pct = round($item->percent);
                 $amount = number_format($item->amount, 2, '.', ' ');
-                $text  .= "- {$item->category->getName()}: {$amount} {$currency} ({$pct}%)\n";
+                $text .= "- {$item->category->getName()}: {$amount} {$currency} ({$pct}%)\n";
             }
         }
 
@@ -81,7 +82,7 @@ class ReportCommandHandler implements CommandHandlerInterface
     public function handleCallback(int $chatId, string $callbackData): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
@@ -90,17 +91,17 @@ class ReportCommandHandler implements CommandHandlerInterface
         $parts = explode(':', $callbackData, 3);
 
         match ($parts[1] ?? '') {
-            'chart'   => $this->sendChart($chatId, $user->getFamily()),
+            'chart' => $this->sendChart($chatId, $user->getFamily()),
             'details' => $this->sendDetails($chatId, $user->getFamily()),
-            default   => null,
+            default => null,
         };
     }
 
     private function sendChart(int $chatId, Family $family): void
     {
-        $now    = new \DateTimeImmutable();
-        $from   = new \DateTimeImmutable($now->format('Y-m-01'));
-        $to     = new \DateTimeImmutable($now->format('Y-m-t'));
+        $now = new \DateTimeImmutable();
+        $from = new \DateTimeImmutable($now->format('Y-m-01'));
+        $to = new \DateTimeImmutable($now->format('Y-m-t'));
         $report = $this->analyticsService->getMonthlyReport($family, $from, $to);
 
         if (empty($report->byCategory)) {
@@ -109,8 +110,8 @@ class ReportCommandHandler implements CommandHandlerInterface
             return;
         }
 
-        $labels    = array_map(static fn(CategoryReport $c) => $c->category->getName(), $report->byCategory);
-        $amounts   = array_map(static fn(CategoryReport $c) => round($c->amount, 2), $report->byCategory);
+        $labels = array_map(static fn (CategoryReport $c) => $c->category->getName(), $report->byCategory);
+        $amounts = array_map(static fn (CategoryReport $c) => round($c->amount, 2), $report->byCategory);
         $chartPath = $this->chartGenerator->generatePieChart($labels, $amounts, $this->translator->trans('report.chart_title', ['%month%' => $this->translator->monthLabel($now)]));
 
         $this->sender->sendPhoto($chatId, $chartPath, $this->translator->trans('report.chart_caption', ['%month%' => $this->translator->monthLabel($now)]));
@@ -122,10 +123,10 @@ class ReportCommandHandler implements CommandHandlerInterface
 
     private function sendDetails(int $chatId, Family $family): void
     {
-        $now      = new \DateTimeImmutable();
-        $from     = new \DateTimeImmutable($now->format('Y-m-01'));
-        $to       = new \DateTimeImmutable($now->format('Y-m-t'));
-        $report   = $this->analyticsService->getMonthlyReport($family, $from, $to);
+        $now = new \DateTimeImmutable();
+        $from = new \DateTimeImmutable($now->format('Y-m-01'));
+        $to = new \DateTimeImmutable($now->format('Y-m-t'));
+        $report = $this->analyticsService->getMonthlyReport($family, $from, $to);
         $currency = $family->getCurrency();
 
         if (empty($report->byCategory)) {
@@ -137,8 +138,8 @@ class ReportCommandHandler implements CommandHandlerInterface
         $text = $this->translator->trans('report.details_title', ['%month%' => $this->translator->monthLabel($now)])."\n\n";
         foreach ($report->byCategory as $item) {
             $amount = number_format($item->amount, 2, '.', ' ');
-            $pct    = round($item->percent);
-            $budget = $item->budgetAmount !== null
+            $pct = round($item->percent);
+            $budget = null !== $item->budgetAmount
                 ? ' / '.$this->translator->trans('report.planned', ['%amount%' => number_format($item->budgetAmount, 2, '.', ' ').' '.$currency])
                 : '';
             $text .= "*{$item->category->getName()}*: {$amount} {$currency} ({$pct}%){$budget}\n";

@@ -25,14 +25,14 @@ class BudgetController extends AbstractController
         BudgetRepository $budgetRepository,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
-        $year  = $request->query->getInt('year', (int) date('Y'));
+        $year = $request->query->getInt('year', (int) date('Y'));
         $month = $request->query->getInt('month', (int) date('n'));
 
         $budgets = $budgetRepository->findBy(
@@ -42,8 +42,8 @@ class BudgetController extends AbstractController
 
         return $this->render('budget/list.html.twig', [
             'budgets' => $budgets,
-            'year'    => $year,
-            'month'   => $month,
+            'year' => $year,
+            'month' => $month,
         ]);
     }
 
@@ -53,15 +53,15 @@ class BudgetController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
         $budget = new Budget();
-        $form   = $this->createForm(BudgetFormType::class, $budget, ['family' => $family]);
+        $form = $this->createForm(BudgetFormType::class, $budget, ['family' => $family]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -75,7 +75,7 @@ class BudgetController extends AbstractController
         }
 
         return $this->render('budget/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'budget.new',
         ]);
     }
@@ -87,10 +87,10 @@ class BudgetController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$budget->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$budget->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
@@ -106,8 +106,8 @@ class BudgetController extends AbstractController
         }
 
         return $this->render('budget/form.html.twig', [
-            'form'   => $form,
-            'title'  => 'budget.edit',
+            'form' => $form,
+            'title' => 'budget.edit',
             'budget' => $budget,
         ]);
     }
@@ -119,14 +119,14 @@ class BudgetController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$budget->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$budget->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_budget_' . $budget->getId(), $request->request->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete_budget_'.$budget->getId(), $request->request->getString('_token'))) {
             $em->remove($budget);
             $em->flush();
             $this->addFlash('success', 'flash.budget.deleted');

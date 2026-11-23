@@ -36,7 +36,7 @@ class AccountFormType extends AbstractType
                 'label' => 'account.form.type',
             ])
             ->add('currency', ChoiceType::class, [
-                'label'   => 'account.form.currency',
+                'label' => 'account.form.currency',
                 'choice_translation_domain' => false,
                 'choices' => [
                     'EUR' => 'EUR',
@@ -49,27 +49,27 @@ class AccountFormType extends AbstractType
                 ],
             ])
             ->add('initialBalance', TextType::class, [
-                'label'    => 'account.form.initial_balance',
+                'label' => 'account.form.initial_balance',
                 'required' => false,
-                'attr'     => ['placeholder' => '0.00'],
+                'attr' => ['placeholder' => '0.00'],
             ])
             ->add('iban', TextType::class, [
-                'label'    => 'account.form.iban',
+                'label' => 'account.form.iban',
                 'required' => false,
-                'attr'     => ['placeholder' => 'common.optional'],
+                'attr' => ['placeholder' => 'common.optional'],
             ])
             ->add('includeInTotal', CheckboxType::class, [
-                'label'    => 'account.form.include_in_total',
+                'label' => 'account.form.include_in_total',
                 'required' => false,
             ])
             ->add('isDefault', CheckboxType::class, [
-                'label'    => 'account.form.is_default',
+                'label' => 'account.form.is_default',
                 'required' => false,
             ])
             ->add('sortOrder', IntegerType::class, [
-                'label'    => 'common.sort_order',
+                'label' => 'common.sort_order',
                 'required' => false,
-                'data'     => 0,
+                'data' => 0,
             ]);
     }
 

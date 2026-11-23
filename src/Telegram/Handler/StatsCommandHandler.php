@@ -8,9 +8,9 @@ use App\Domain\Analytics\AnalyticsService;
 use App\Domain\Analytics\CategoryReport;
 use App\Domain\Analytics\ChartGenerator;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class StatsCommandHandler implements CommandHandlerInterface
 {
@@ -20,20 +20,22 @@ class StatsCommandHandler implements CommandHandlerInterface
         private readonly ChartGenerator $chartGenerator,
         private readonly TelegramSender $sender,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
+
             return;
         }
 
         $family = $user->getFamily();
-        $now    = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable();
 
         $report = $this->analyticsService->getMonthlyReport(
             $family,
@@ -47,12 +49,13 @@ class StatsCommandHandler implements CommandHandlerInterface
                 $this->translator->trans('stats.empty', ['%month%' => $this->translator->monthLabel($now)]),
                 parseMode: 'Markdown',
             );
+
             return;
         }
 
         // Build data arrays for the pie chart
-        $labels  = array_map(static fn(CategoryReport $c) => $c->category->getName(), $report->byCategory);
-        $amounts = array_map(static fn(CategoryReport $c) => round($c->amount, 2), $report->byCategory);
+        $labels = array_map(static fn (CategoryReport $c) => $c->category->getName(), $report->byCategory);
+        $amounts = array_map(static fn (CategoryReport $c) => round($c->amount, 2), $report->byCategory);
 
         $chartPath = $this->chartGenerator->generatePieChart(
             $labels,
@@ -61,11 +64,11 @@ class StatsCommandHandler implements CommandHandlerInterface
         );
 
         $currency = $family->getCurrency();
-        $caption  = $this->translator->trans('stats.caption', [
-            '%month%'    => $this->translator->monthLabel($now),
+        $caption = $this->translator->trans('stats.caption', [
+            '%month%' => $this->translator->monthLabel($now),
             '%expenses%' => sprintf('%.2f %s', $report->totalExpenses, $currency),
-            '%income%'   => sprintf('%.2f %s', $report->totalIncome, $currency),
-            '%saved%'    => sprintf('%.2f %s', $report->balance, $currency),
+            '%income%' => sprintf('%.2f %s', $report->totalIncome, $currency),
+            '%saved%' => sprintf('%.2f %s', $report->balance, $currency),
         ]);
 
         $this->sender->sendPhoto($chatId, $chartPath, $caption);

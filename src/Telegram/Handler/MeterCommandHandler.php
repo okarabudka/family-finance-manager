@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Telegram\Handler;
 
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\Conversation\AddMeterConversation;
 use App\Telegram\ConversationManager;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class MeterCommandHandler implements CommandHandlerInterface
 {
@@ -18,15 +18,17 @@ class MeterCommandHandler implements CommandHandlerInterface
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
 
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
+
             return;
         }
 

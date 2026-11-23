@@ -21,8 +21,8 @@ class CategoryRuleServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->ruleRepo = $this->createStub(CategoryRuleRepository::class);
-        $this->service  = new CategoryRuleService($this->ruleRepo);
-        $this->family   = new Family();
+        $this->service = new CategoryRuleService($this->ruleRepo);
+        $this->family = new Family();
     }
 
     public function testReturnsNullWhenNoRulesExist(): void
@@ -37,7 +37,7 @@ class CategoryRuleServiceTest extends TestCase
     public function testMatchesByKeyword(): void
     {
         $category = $this->createCategory('Groceries');
-        $rule     = $this->createRule($category, ['rewe', 'lidl'], null);
+        $rule = $this->createRule($category, ['rewe', 'lidl'], null);
 
         $this->ruleRepo->method('findByFamilyOrderedByPriority')->willReturn([$rule]);
 
@@ -49,7 +49,7 @@ class CategoryRuleServiceTest extends TestCase
     public function testKeywordMatchIsCaseInsensitive(): void
     {
         $category = $this->createCategory('Groceries');
-        $rule     = $this->createRule($category, ['REWE'], null);
+        $rule = $this->createRule($category, ['REWE'], null);
 
         $this->ruleRepo->method('findByFamilyOrderedByPriority')->willReturn([$rule]);
 
@@ -61,9 +61,9 @@ class CategoryRuleServiceTest extends TestCase
     public function testMatchesByIbanBeforeKeyword(): void
     {
         $groceriesCategory = $this->createCategory('Groceries');
-        $rentCategory      = $this->createCategory('Rent');
+        $rentCategory = $this->createCategory('Rent');
 
-        $ibanRule    = $this->createRule($rentCategory, [], 'DE89370400440532013000');
+        $ibanRule = $this->createRule($rentCategory, [], 'DE89370400440532013000');
         $keywordRule = $this->createRule($groceriesCategory, ['rewe'], null);
 
         $this->ruleRepo->method('findByFamilyOrderedByPriority')
@@ -82,7 +82,7 @@ class CategoryRuleServiceTest extends TestCase
     public function testReturnsNullWhenNoKeywordMatches(): void
     {
         $category = $this->createCategory('Groceries');
-        $rule     = $this->createRule($category, ['rewe', 'lidl'], null);
+        $rule = $this->createRule($category, ['rewe', 'lidl'], null);
 
         $this->ruleRepo->method('findByFamilyOrderedByPriority')->willReturn([$rule]);
 
@@ -94,7 +94,7 @@ class CategoryRuleServiceTest extends TestCase
     public function testReturnsNullWhenIbanDoesNotMatch(): void
     {
         $category = $this->createCategory('Utilities');
-        $rule     = $this->createRule($category, [], 'DE89370400440532013000');
+        $rule = $this->createRule($category, [], 'DE89370400440532013000');
 
         $this->ruleRepo->method('findByFamilyOrderedByPriority')->willReturn([$rule]);
 

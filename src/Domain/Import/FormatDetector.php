@@ -21,7 +21,7 @@ class FormatDetector
             return 'mt940';
         }
 
-        if ($extension === 'csv') {
+        if ('csv' === $extension) {
             // Sparkasse CSV has a characteristic header line
             if (str_contains($firstLine, 'Auftragskonto') || str_contains($firstLine, 'Buchungstag')) {
                 return 'csv_sparkasse';
@@ -36,14 +36,14 @@ class FormatDetector
     private function readFirstLine(string $path): string
     {
         $handle = fopen($path, 'r');
-        if ($handle === false) {
+        if (false === $handle) {
             throw new \RuntimeException("Cannot open file: {$path}");
         }
 
         $line = fgets($handle);
         fclose($handle);
 
-        if ($line === false || $line === '') {
+        if (false === $line || '' === $line) {
             return '';
         }
 

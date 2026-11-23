@@ -9,8 +9,8 @@ use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Family;
 use App\Entity\Transaction;
-use App\Entity\User;
 use App\Entity\TransactionType;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 
@@ -20,7 +20,8 @@ class TransactionService
         private readonly EntityManagerInterface $em,
         private readonly AccountService $accountService,
         private readonly CacheInterface $cache,
-    ) {}
+    ) {
+    }
 
     /**
      * Invalidates monthly report cache for a family for the given month.
@@ -166,7 +167,7 @@ class TransactionService
     public function delete(Transaction $transaction): void
     {
         $family = $transaction->getFamily();
-        $date   = $transaction->getExecutedAt();
+        $date = $transaction->getExecutedAt();
 
         if ($transaction->getSourceAccount()) {
             $this->accountService->invalidateCache($transaction->getSourceAccount());

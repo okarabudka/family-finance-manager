@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Entity;
 use App\Entity\ReminderFrequency;
 use App\Entity\ReminderTemplate;
 use App\Entity\ReminderType;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ReminderTemplateTest extends TestCase
@@ -47,7 +46,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testNotDueWhenHourDoesNotMatch(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9);
+        $t = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9);
         $now = $this->makeNow('2025-06-10', hour: 8); // wrong hour
 
         self::assertFalse($t->isDue($now));
@@ -55,7 +54,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testNotDueAtNextHourEither(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9);
+        $t = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9);
         $now = $this->makeNow('2025-06-10', hour: 10);
 
         self::assertFalse($t->isDue($now));
@@ -65,7 +64,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testDailyDueWhenNeverSent(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 9, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 9);
 
         self::assertTrue($t->isDue($now));
@@ -97,7 +96,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testDailyDueAtMidnight(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 0, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 0, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 0);
 
         self::assertTrue($t->isDue($now));
@@ -105,7 +104,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testDailyDueAt23(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 23, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Daily, sendHour: 23, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 23);
 
         self::assertTrue($t->isDue($now));
@@ -116,7 +115,7 @@ class ReminderTemplateTest extends TestCase
     public function testWeeklyDueOnCorrectDayNeverSent(): void
     {
         // 2025-06-09 is Monday (ISO day 1)
-        $t   = $this->makeTemplate(ReminderFrequency::Weekly, sendHour: 9, dayOfWeek: 1, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Weekly, sendHour: 9, dayOfWeek: 1, lastSentAt: null);
         $now = $this->makeNow('2025-06-09', hour: 9);
 
         self::assertTrue($t->isDue($now));
@@ -125,7 +124,7 @@ class ReminderTemplateTest extends TestCase
     public function testWeeklyNotDueOnWrongDay(): void
     {
         // 2025-06-10 is Tuesday (ISO day 2), template wants Monday (1)
-        $t   = $this->makeTemplate(ReminderFrequency::Weekly, sendHour: 9, dayOfWeek: 1, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Weekly, sendHour: 9, dayOfWeek: 1, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 9);
 
         self::assertFalse($t->isDue($now));
@@ -177,7 +176,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testMonthlyDueOnCorrectDayNeverSent(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 9, dayOfMonth: 10, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 9, dayOfMonth: 10, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 9);
 
         self::assertTrue($t->isDue($now));
@@ -185,7 +184,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testMonthlyNotDueOnWrongDay(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 9, dayOfMonth: 15, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 9, dayOfMonth: 15, lastSentAt: null);
         $now = $this->makeNow('2025-06-10', hour: 9);
 
         self::assertFalse($t->isDue($now));
@@ -232,7 +231,7 @@ class ReminderTemplateTest extends TestCase
 
     public function testMonthlyOnLastDayOfMonth(): void
     {
-        $t   = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 8, dayOfMonth: 31, lastSentAt: null);
+        $t = $this->makeTemplate(ReminderFrequency::Monthly, sendHour: 8, dayOfMonth: 31, lastSentAt: null);
         $now = $this->makeNow('2025-01-31', hour: 8);
 
         self::assertTrue($t->isDue($now));

@@ -28,7 +28,7 @@ class DashboardController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->render('dashboard/no_family.html.twig');
         }
 
@@ -70,16 +70,16 @@ class DashboardController extends AbstractController
         }
 
         return $this->render('dashboard/index.html.twig', [
-            'accounts'        => $accounts,
-            'balances'        => $balances,
-            'monthlyReport'   => $monthlyReport,
-            'suggestions'     => $suggestions,
-            'categoryLabels'  => $categoryLabels,
+            'accounts' => $accounts,
+            'balances' => $balances,
+            'monthlyReport' => $monthlyReport,
+            'suggestions' => $suggestions,
+            'categoryLabels' => $categoryLabels,
             'categoryAmounts' => $categoryAmounts,
-            'categoryColors'  => $categoryColors,
-            'trendLabels'     => $trendLabels,
-            'trendExpenses'   => $trendExpenses,
-            'trendIncome'     => $trendIncome,
+            'categoryColors' => $categoryColors,
+            'trendLabels' => $trendLabels,
+            'trendExpenses' => $trendExpenses,
+            'trendIncome' => $trendIncome,
         ]);
     }
 }

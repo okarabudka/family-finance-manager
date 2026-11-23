@@ -10,13 +10,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 enum MeterType: string implements TranslatableInterface
 {
     case Electricity = 'electricity';
-    case Water       = 'water';
+    case Water = 'water';
 
     public function label(): string
     {
         return match ($this) {
             self::Electricity => 'Electricity',
-            self::Water       => 'Water',
+            self::Water => 'Water',
         };
     }
 
@@ -24,7 +24,7 @@ enum MeterType: string implements TranslatableInterface
     {
         return match ($this) {
             self::Electricity => 'kWh',
-            self::Water       => 'm³',
+            self::Water => 'm³',
         };
     }
 
@@ -32,7 +32,7 @@ enum MeterType: string implements TranslatableInterface
     {
         return match ($this) {
             self::Electricity => '⚡',
-            self::Water       => '💧',
+            self::Water => '💧',
         };
     }
 

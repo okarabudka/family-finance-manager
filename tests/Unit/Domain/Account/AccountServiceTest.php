@@ -10,8 +10,8 @@ use App\Entity\AccountType;
 use App\Entity\Family;
 use App\Repository\TransactionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -25,8 +25,8 @@ class AccountServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->txRepo  = $this->createMock(TransactionRepository::class);
-        $this->cache   = $this->createMock(CacheInterface::class);
+        $this->txRepo = $this->createMock(TransactionRepository::class);
+        $this->cache = $this->createMock(CacheInterface::class);
         $this->service = new AccountService($this->txRepo, $this->cache);
     }
 
@@ -37,7 +37,7 @@ class AccountServiceTest extends TestCase
     {
         $this->cache
             ->method('get')
-            ->willReturnCallback(static fn(string $key, callable $cb) => $cb());
+            ->willReturnCallback(static fn (string $key, callable $cb) => $cb());
     }
 
     private function makeAccount(
@@ -144,16 +144,16 @@ class AccountServiceTest extends TestCase
     public function testGetBalanceUsesCacheKey(): void
     {
         $account = $this->makeAccount(initialBalance: 100.0);
-        $id      = Uuid::v4();
+        $id = Uuid::v4();
         $this->setPrivateId($account, $id);
 
-        $expectedKey = 'account_balance_' . $id->toRfc4122();
+        $expectedKey = 'account_balance_'.$id->toRfc4122();
 
         $this->cache
             ->expects(self::once())
             ->method('get')
             ->with(self::stringContains((string) $id))
-            ->willReturnCallback(static fn(string $key, callable $cb) => $cb());
+            ->willReturnCallback(static fn (string $key, callable $cb) => $cb());
 
         $this->txRepo->method('sumInflow')->willReturn(0.0);
         $this->txRepo->method('sumOutflow')->willReturn(0.0);
@@ -166,7 +166,7 @@ class AccountServiceTest extends TestCase
     public function testInvalidateCacheDeletesAccountKey(): void
     {
         $account = $this->makeAccount();
-        $id      = Uuid::v4();
+        $id = Uuid::v4();
         $this->setPrivateId($account, $id);
 
         $this->cache
@@ -185,7 +185,7 @@ class AccountServiceTest extends TestCase
         $this->txRepo->method('sumInflow')->willReturn(0.0);
         $this->txRepo->method('sumOutflow')->willReturn(0.0);
 
-        $family   = $this->makeFamilyWithAccounts([
+        $family = $this->makeFamilyWithAccounts([
             $this->makeAccount(initialBalance: 100.0, currency: 'EUR'),
             $this->makeAccount(initialBalance: 200.0, currency: 'EUR'),
         ]);

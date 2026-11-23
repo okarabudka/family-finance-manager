@@ -32,23 +32,23 @@ class TransactionController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
         $filters = array_filter([
-            'type'     => $request->query->getString('type'),
+            'type' => $request->query->getString('type'),
             'category' => $request->query->getString('category'),
-            'from'     => $request->query->getString('from'),
-            'to'       => $request->query->getString('to'),
+            'from' => $request->query->getString('from'),
+            'to' => $request->query->getString('to'),
         ]);
 
         $query = $repo->createListQuery($family, $filters);
         $transactions = $paginator->paginate($query, $request->query->getInt('page', 1), 30);
 
         return $this->render('transaction/list.html.twig', [
-            'transactions'   => $transactions,
-            'filters'        => $filters,
+            'transactions' => $transactions,
+            'filters' => $filters,
             'transactionTypes' => TransactionType::cases(),
         ]);
     }
@@ -62,7 +62,7 @@ class TransactionController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -110,7 +110,7 @@ class TransactionController extends AbstractController
         }
 
         return $this->render('transaction/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'transaction.new',
         ]);
     }
@@ -125,7 +125,7 @@ class TransactionController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$transaction->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$transaction->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
@@ -137,10 +137,10 @@ class TransactionController extends AbstractController
             \assert(null !== $data->amount && null !== $data->executedAt, 'guaranteed by the form constraints');
 
             $transactionService->update($transaction, [
-                'amount'      => $data->amount,
+                'amount' => $data->amount,
                 'description' => $data->description,
-                'category'    => $data->category,
-                'executedAt'  => $data->executedAt,
+                'category' => $data->category,
+                'executedAt' => $data->executedAt,
             ]);
 
             $this->addFlash('success', 'flash.transaction.updated');
@@ -149,8 +149,8 @@ class TransactionController extends AbstractController
         }
 
         return $this->render('transaction/form.html.twig', [
-            'form'        => $form,
-            'title'       => 'transaction.edit',
+            'form' => $form,
+            'title' => 'transaction.edit',
             'transaction' => $transaction,
         ]);
     }
@@ -165,11 +165,11 @@ class TransactionController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$transaction->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$transaction->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_transaction_' . $transaction->getId(), $request->request->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete_transaction_'.$transaction->getId(), $request->request->getString('_token'))) {
             $transactionService->delete($transaction);
             $this->addFlash('success', 'flash.transaction.deleted');
         } else {

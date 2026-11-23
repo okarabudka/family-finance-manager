@@ -22,7 +22,8 @@ class UserCrudController extends AbstractCrudController
 {
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
-    ) {}
+    ) {
+    }
 
     public static function getEntityFqcn(): string
     {
@@ -43,7 +44,7 @@ class UserCrudController extends AbstractCrudController
         yield TextField::new('name', 'admin.field.name');
         yield TextField::new('password', 'admin.field.password')
             ->setFormType(PasswordType::class)
-            ->setRequired($pageName === 'new')
+            ->setRequired('new' === $pageName)
             ->onlyOnForms()
             ->setHelp('admin.help.password');
         yield ChoiceField::new('roles', 'admin.field.roles')
@@ -57,7 +58,7 @@ class UserCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, mixed $entityInstance): void
     {
-        if ($entityInstance->getPassword() !== '') {
+        if ('' !== $entityInstance->getPassword()) {
             $entityInstance->setPassword(
                 $this->passwordHasher->hashPassword($entityInstance, $entityInstance->getPassword())
             );
@@ -68,7 +69,7 @@ class UserCrudController extends AbstractCrudController
     public function updateEntity(EntityManagerInterface $entityManager, mixed $entityInstance): void
     {
         $plain = $entityInstance->getPassword();
-        if ($plain === '') {
+        if ('' === $plain) {
             $original = $entityManager->getUnitOfWork()->getOriginalEntityData($entityInstance);
             $entityInstance->setPassword(\is_string($original['password'] ?? null) ? $original['password'] : '');
         } else {

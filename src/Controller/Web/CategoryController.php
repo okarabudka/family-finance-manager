@@ -27,7 +27,7 @@ class CategoryController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -36,7 +36,7 @@ class CategoryController extends AbstractController
 
         return $this->render('category/list.html.twig', [
             'expenseCategories' => $expenseCategories,
-            'incomeCategories'  => $incomeCategories,
+            'incomeCategories' => $incomeCategories,
         ]);
     }
 
@@ -49,7 +49,7 @@ class CategoryController extends AbstractController
         $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -68,7 +68,7 @@ class CategoryController extends AbstractController
         }
 
         return $this->render('category/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'category.new',
         ]);
     }

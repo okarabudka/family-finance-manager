@@ -12,5 +12,6 @@ final readonly class ProcessImportMessage
 {
     public function __construct(
         public string $importFileId,
-    ) {}
+    ) {
+    }
 }

@@ -23,31 +23,31 @@ class NewUserFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'user.form.name',
+                'label' => 'user.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
-                'label'       => 'user.form.email',
+                'label' => 'user.form.email',
                 'constraints' => [new NotBlank(), new Email()],
             ])
             ->add('password', RepeatedType::class, [
-                'type'            => PasswordType::class,
-                'mapped'          => false,
-                'first_options'   => ['label' => 'user.form.password', 'attr' => ['autocomplete' => 'new-password']],
-                'second_options'  => ['label' => 'user.form.password_confirm', 'attr' => ['autocomplete' => 'new-password']],
+                'type' => PasswordType::class,
+                'mapped' => false,
+                'first_options' => ['label' => 'user.form.password', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options' => ['label' => 'user.form.password_confirm', 'attr' => ['autocomplete' => 'new-password']],
                 'invalid_message' => 'user.password.mismatch',
-                'constraints'     => [new NotBlank(), new Length(min: 6)],
+                'constraints' => [new NotBlank(), new Length(min: 6)],
             ])
             ->add('roles', ChoiceType::class, [
-                'label'    => 'user.form.role',
-                'mapped'   => false,
-                'choices'  => [
+                'label' => 'user.form.role',
+                'mapped' => false,
+                'choices' => [
                     'user.role.member' => 'ROLE_USER',
                     'user.role.admin' => 'ROLE_ADMIN',
                 ],
                 'expanded' => true,
                 'multiple' => false,
-                'data'     => 'ROLE_USER',
+                'data' => 'ROLE_USER',
             ]);
     }
 
@@ -55,7 +55,7 @@ class NewUserFormType extends AbstractType
     {
         $resolver->setDefaults([
             'csrf_protection' => true,
-            'csrf_token_id'   => 'new_user',
+            'csrf_token_id' => 'new_user',
         ]);
     }
 }

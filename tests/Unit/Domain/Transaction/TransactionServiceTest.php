@@ -32,9 +32,9 @@ class TransactionServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->em             = $this->createMock(EntityManagerInterface::class);
+        $this->em = $this->createMock(EntityManagerInterface::class);
         $this->accountService = $this->createMock(AccountService::class);
-        $this->cache          = $this->createMock(CacheInterface::class);
+        $this->cache = $this->createMock(CacheInterface::class);
 
         $this->service = new TransactionService($this->em, $this->accountService, $this->cache);
 
@@ -181,6 +181,7 @@ class TransactionServiceTest extends TestCase
         $this->cache->method('delete')
             ->willReturnCallback(function (string $key) use (&$deletedKeys): bool {
                 $deletedKeys[] = $key;
+
                 return true;
             });
 
@@ -214,6 +215,7 @@ class TransactionServiceTest extends TestCase
         $this->cache->method('delete')
             ->willReturnCallback(function (string $key) use (&$deletedKeys): bool {
                 $deletedKeys[] = $key;
+
                 return true;
             });
 
@@ -221,7 +223,7 @@ class TransactionServiceTest extends TestCase
         $this->service->update($transaction, ['description' => 'Updated description']);
 
         // Only monthly_report_ keys contain the date — trend keys don't
-        $reportKeys = array_filter($deletedKeys, fn(string $k) => str_starts_with($k, 'monthly_report_'));
+        $reportKeys = array_filter($deletedKeys, fn (string $k) => str_starts_with($k, 'monthly_report_'));
         self::assertCount(1, $reportKeys); // exactly one month invalidated
         foreach ($reportKeys as $key) {
             self::assertStringContainsString('2025-03', $key);

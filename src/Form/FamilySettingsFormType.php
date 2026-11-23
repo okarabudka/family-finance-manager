@@ -20,11 +20,11 @@ class FamilySettingsFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'settings.family.form.name',
+                'label' => 'settings.family.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 1, max: 100)],
             ])
             ->add('currency', ChoiceType::class, [
-                'label'   => 'settings.family.form.currency',
+                'label' => 'settings.family.form.currency',
                 'choices' => [
                     'currency.eur' => 'EUR',
                     'currency.usd' => 'USD',
@@ -41,9 +41,9 @@ class FamilySettingsFormType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => Family::class,
+            'data_class' => Family::class,
             'csrf_protection' => true,
-            'csrf_token_id'   => 'family_settings',
+            'csrf_token_id' => 'family_settings',
         ]);
     }
 }

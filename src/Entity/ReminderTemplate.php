@@ -80,6 +80,7 @@ class ReminderTemplate
     public function setFamily(?Family $family): static
     {
         $this->family = $family;
+
         return $this;
     }
 
@@ -91,6 +92,7 @@ class ReminderTemplate
     public function setName(string $name): static
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -102,6 +104,7 @@ class ReminderTemplate
     public function setType(ReminderType $type): static
     {
         $this->type = $type;
+
         return $this;
     }
 
@@ -113,6 +116,7 @@ class ReminderTemplate
     public function setFrequency(ReminderFrequency $frequency): static
     {
         $this->frequency = $frequency;
+
         return $this;
     }
 
@@ -124,6 +128,7 @@ class ReminderTemplate
     public function setDayOfWeek(?int $dayOfWeek): static
     {
         $this->dayOfWeek = $dayOfWeek;
+
         return $this;
     }
 
@@ -135,6 +140,7 @@ class ReminderTemplate
     public function setDayOfMonth(?int $dayOfMonth): static
     {
         $this->dayOfMonth = $dayOfMonth;
+
         return $this;
     }
 
@@ -146,6 +152,7 @@ class ReminderTemplate
     public function setSendHour(int $sendHour): static
     {
         $this->sendHour = $sendHour;
+
         return $this;
     }
 
@@ -157,6 +164,7 @@ class ReminderTemplate
     public function setMessageText(string $messageText): static
     {
         $this->messageText = $messageText;
+
         return $this;
     }
 
@@ -168,6 +176,7 @@ class ReminderTemplate
     public function setSendViaTelegram(bool $sendViaTelegram): static
     {
         $this->sendViaTelegram = $sendViaTelegram;
+
         return $this;
     }
 
@@ -179,6 +188,7 @@ class ReminderTemplate
     public function setSendViaEmail(bool $sendViaEmail): static
     {
         $this->sendViaEmail = $sendViaEmail;
+
         return $this;
     }
 
@@ -190,6 +200,7 @@ class ReminderTemplate
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 
@@ -201,6 +212,7 @@ class ReminderTemplate
     public function setLastSentAt(?\DateTimeImmutable $lastSentAt): static
     {
         $this->lastSentAt = $lastSentAt;
+
         return $this;
     }
 
@@ -217,43 +229,46 @@ class ReminderTemplate
         }
 
         return match ($this->frequency) {
-            ReminderFrequency::Daily   => $this->notSentToday($now),
-            ReminderFrequency::Weekly  => $this->isCorrectDayOfWeek($now) && $this->notSentThisWeek($now),
+            ReminderFrequency::Daily => $this->notSentToday($now),
+            ReminderFrequency::Weekly => $this->isCorrectDayOfWeek($now) && $this->notSentThisWeek($now),
             ReminderFrequency::Monthly => $this->isCorrectDayOfMonth($now) && $this->notSentThisMonth($now),
         };
     }
 
     private function notSentToday(\DateTimeImmutable $now): bool
     {
-        if ($this->lastSentAt === null) {
+        if (null === $this->lastSentAt) {
             return true;
         }
+
         return $this->lastSentAt->format('Y-m-d') !== $now->format('Y-m-d');
     }
 
     private function notSentThisWeek(\DateTimeImmutable $now): bool
     {
-        if ($this->lastSentAt === null) {
+        if (null === $this->lastSentAt) {
             return true;
         }
+
         return $this->lastSentAt->format('o-W') !== $now->format('o-W');
     }
 
     private function notSentThisMonth(\DateTimeImmutable $now): bool
     {
-        if ($this->lastSentAt === null) {
+        if (null === $this->lastSentAt) {
             return true;
         }
+
         return $this->lastSentAt->format('Y-m') !== $now->format('Y-m');
     }
 
     private function isCorrectDayOfWeek(\DateTimeImmutable $now): bool
     {
-        return $this->dayOfWeek === null || (int) $now->format('N') === $this->dayOfWeek;
+        return null === $this->dayOfWeek || (int) $now->format('N') === $this->dayOfWeek;
     }
 
     private function isCorrectDayOfMonth(\DateTimeImmutable $now): bool
     {
-        return $this->dayOfMonth === null || (int) $now->format('j') === $this->dayOfMonth;
+        return null === $this->dayOfMonth || (int) $now->format('j') === $this->dayOfMonth;
     }
 }

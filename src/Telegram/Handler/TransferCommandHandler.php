@@ -12,7 +12,8 @@ class TransferCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private readonly ConversationManager $conversationManager,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void

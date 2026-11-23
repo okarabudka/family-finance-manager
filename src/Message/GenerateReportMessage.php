@@ -19,5 +19,6 @@ final readonly class GenerateReportMessage
 
         /** Month number 1–12 */
         public int $month,
-    ) {}
+    ) {
+    }
 }

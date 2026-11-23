@@ -14,27 +14,29 @@ class TelegramNotifier
         private readonly TelegramSender $sender,
         private readonly LoggerInterface $logger,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     public function notifyImportComplete(ImportFile $importFile, int $pendingCount): void
     {
         $user = $importFile->getUploadedBy();
         $chatId = $user->getTelegramChatId();
 
-        if ($chatId === null) {
+        if (null === $chatId) {
             $this->logger->warning('TelegramNotifier: user has no Telegram chat ID', [
                 'userId' => (string) $user->getId(),
             ]);
+
             return;
         }
 
         $imported = $importFile->getImportedRows();
-        $skipped  = $importFile->getSkippedRows();
+        $skipped = $importFile->getSkippedRows();
 
         $text = $this->translator->trans('import.complete', [
-            '%file%'     => $importFile->getOriginalFilename(),
+            '%file%' => $importFile->getOriginalFilename(),
             '%imported%' => $imported,
-            '%skipped%'  => $skipped,
+            '%skipped%' => $skipped,
         ])."\n";
 
         if ($pendingCount > 0) {
@@ -48,10 +50,10 @@ class TelegramNotifier
 
     public function notifyImportFailed(ImportFile $importFile, string $reason): void
     {
-        $user   = $importFile->getUploadedBy();
+        $user = $importFile->getUploadedBy();
         $chatId = $user->getTelegramChatId();
 
-        if ($chatId === null) {
+        if (null === $chatId) {
             return;
         }
 
@@ -65,7 +67,7 @@ class TelegramNotifier
     public function notify(User $user, string $message, string $parseMode = ''): void
     {
         $chatId = $user->getTelegramChatId();
-        if ($chatId === null) {
+        if (null === $chatId) {
             return;
         }
 

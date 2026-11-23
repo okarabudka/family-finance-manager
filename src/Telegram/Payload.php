@@ -93,7 +93,7 @@ final class Payload
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed>              $data
      * @param array<int|string, string> $path
      */
     private static function get(array $data, array $path): mixed

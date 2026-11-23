@@ -64,6 +64,7 @@ class MeterReading
     public function setFamily(Family $family): static
     {
         $this->family = $family;
+
         return $this;
     }
 
@@ -75,6 +76,7 @@ class MeterReading
     public function setCreatedBy(User $createdBy): static
     {
         $this->createdBy = $createdBy;
+
         return $this;
     }
 
@@ -86,6 +88,7 @@ class MeterReading
     public function setType(MeterType $type): static
     {
         $this->type = $type;
+
         return $this;
     }
 
@@ -97,6 +100,7 @@ class MeterReading
     public function setValue(float $value): static
     {
         $this->value = (string) $value;
+
         return $this;
     }
 
@@ -108,6 +112,7 @@ class MeterReading
     public function setReadingDate(\DateTimeImmutable $readingDate): static
     {
         $this->readingDate = $readingDate;
+
         return $this;
     }
 
@@ -119,6 +124,7 @@ class MeterReading
     public function setPhotoPath(?string $photoPath): static
     {
         $this->photoPath = $photoPath;
+
         return $this;
     }
 
@@ -130,6 +136,7 @@ class MeterReading
     public function setNotes(?string $notes): static
     {
         $this->notes = $notes;
+
         return $this;
     }
 

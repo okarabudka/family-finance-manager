@@ -9,10 +9,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum ImportTransactionStatus: string implements TranslatableInterface
 {
-    case Pending      = 'pending';
+    case Pending = 'pending';
     case AutoImported = 'auto_imported';
-    case Confirmed    = 'confirmed';
-    case Skipped      = 'skipped';
+    case Confirmed = 'confirmed';
+    case Skipped = 'skipped';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {

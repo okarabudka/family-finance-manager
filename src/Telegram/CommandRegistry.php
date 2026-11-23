@@ -16,17 +16,18 @@ class CommandRegistry
         private readonly TelegramSender $sender,
         private readonly LoggerInterface $logger,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $update
      */
     public function execute(string $command, array $update): void
     {
-        $chatId  = Payload::chatId($update);
+        $chatId = Payload::chatId($update);
         $handler = $this->handlers[$command] ?? null;
 
-        if ($handler === null) {
+        if (null === $handler) {
             $this->logger->info('Unknown Telegram command', ['command' => $command, 'chatId' => $chatId]);
             $this->sender->sendMessage($chatId, $this->translator->trans('dispatcher.unknown_command'));
 

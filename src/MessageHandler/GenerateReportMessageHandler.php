@@ -7,9 +7,9 @@ namespace App\MessageHandler;
 use App\Domain\Analytics\AnalyticsService;
 use App\Message\GenerateReportMessage;
 use App\Repository\FamilyRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\TelegramSender;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use App\Telegram\BotTranslator;
 
 #[AsMessageHandler]
 class GenerateReportMessageHandler
@@ -19,13 +19,14 @@ class GenerateReportMessageHandler
         private readonly AnalyticsService $analyticsService,
         private readonly TelegramSender $sender,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GenerateReportMessage $message): void
     {
         $family = $this->familyRepo->find($message->familyId);
 
-        if ($family === null) {
+        if (null === $family) {
             return;
         }
 
@@ -34,34 +35,34 @@ class GenerateReportMessageHandler
         );
         $to = $from->modify('last day of this month')->setTime(23, 59, 59);
 
-        $report     = $this->analyticsService->getMonthlyReport($family, $from, $to);
+        $report = $this->analyticsService->getMonthlyReport($family, $from, $to);
         $monthLabel = $this->translator->monthLabel($from);
-        $currency   = $family->getCurrency();
+        $currency = $family->getCurrency();
 
-        $totalIncome   = number_format($report->totalIncome, 2, '.', ' ');
+        $totalIncome = number_format($report->totalIncome, 2, '.', ' ');
         $totalExpenses = number_format($report->totalExpenses, 2, '.', ' ');
-        $balance       = number_format($report->balance, 2, '.', ' ');
+        $balance = number_format($report->balance, 2, '.', ' ');
 
         $text = $this->translator->trans('report.summary', [
-            '%month%'    => $monthLabel,
-            '%income%'   => "{$totalIncome} {$currency}",
+            '%month%' => $monthLabel,
+            '%income%' => "{$totalIncome} {$currency}",
             '%expenses%' => "{$totalExpenses} {$currency}",
-            '%balance%'  => "{$balance} {$currency}",
+            '%balance%' => "{$balance} {$currency}",
         ])."\n";
 
         if (count($report->byCategory) > 0) {
             $text .= "\n".$this->translator->trans('report.by_category')."\n";
 
             foreach ($report->byCategory as $item) {
-                $pct    = round($item->percent);
+                $pct = round($item->percent);
                 $amount = number_format($item->amount, 2, '.', ' ');
-                $text  .= "- {$item->category->getName()}: {$amount} {$currency} ({$pct}%)\n";
+                $text .= "- {$item->category->getName()}: {$amount} {$currency} ({$pct}%)\n";
             }
         }
 
         foreach ($family->getMembers() as $member) {
             $chatId = $member->getTelegramChatId();
-            if ($chatId !== null) {
+            if (null !== $chatId) {
                 $this->sender->sendMessage($chatId, $text, parseMode: 'Markdown');
             }
         }

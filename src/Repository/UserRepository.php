@@ -48,6 +48,6 @@ class UserRepository extends ServiceEntityRepository implements UserProviderInte
 
     public function supportsClass(string $class): bool
     {
-        return $class === User::class || is_subclass_of($class, User::class);
+        return User::class === $class || is_subclass_of($class, User::class);
     }
 }

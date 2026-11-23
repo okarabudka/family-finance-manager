@@ -9,9 +9,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum SavingsGoalStatus: string implements TranslatableInterface
 {
-    case Active    = 'active';
+    case Active = 'active';
     case Completed = 'completed';
-    case Paused    = 'archived';
+    case Paused = 'archived';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {

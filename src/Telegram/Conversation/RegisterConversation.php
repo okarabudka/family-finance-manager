@@ -9,13 +9,13 @@ use App\Entity\AccountType;
 use App\Entity\Family;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use App\Telegram\BotTranslator;
 
 class RegisterConversation implements ConversationInterface
 {
@@ -26,7 +26,8 @@ class RegisterConversation implements ConversationInterface
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly UserRepository $userRepo,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $update
@@ -63,14 +64,14 @@ class RegisterConversation implements ConversationInterface
             return;
         }
 
-        if ($this->userRepo->findByTelegramChatId($chatId) !== null) {
+        if (null !== $this->userRepo->findByTelegramChatId($chatId)) {
             $this->conversationManager->end($chatId);
             $this->sender->sendMessage($chatId, $this->translator->trans('register.already_registered'));
 
             return;
         }
 
-        $telegramId       = Payload::string($state, 'data', 'telegramUser', 'id') ?? (string) $chatId;
+        $telegramId = Payload::string($state, 'data', 'telegramUser', 'id') ?? (string) $chatId;
         $telegramUsername = Payload::string($state, 'data', 'telegramUser', 'username');
 
         // Create a family
@@ -110,7 +111,7 @@ class RegisterConversation implements ConversationInterface
         $this->sender->sendMessage(
             $chatId,
             $this->translator->trans('register.done', [
-                '%name%'         => $name,
+                '%name%' => $name,
                 '%main_account%' => $bankAccount->getName(),
                 '%cash_account%' => $cashAccount->getName(),
             ]),

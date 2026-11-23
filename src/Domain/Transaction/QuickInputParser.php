@@ -22,7 +22,7 @@ class QuickInputParser
     {
         $text = trim($text);
 
-        if ($text === '') {
+        if ('' === $text) {
             return null;
         }
 
@@ -31,21 +31,21 @@ class QuickInputParser
         $amountPattern = '(?:\d[\d\s]*(?:[.,]\d{1,2})?)';
 
         // Try: amount at the beginning, description follows
-        if (preg_match('/^(' . $amountPattern . ')\s+(.+)$/u', $text, $m)) {
-            $amount      = $this->normaliseAmount($m[1]);
+        if (preg_match('/^('.$amountPattern.')\s+(.+)$/u', $text, $m)) {
+            $amount = $this->normaliseAmount($m[1]);
             $description = trim($m[2]);
 
-            if ($amount > 0.0 && $description !== '') {
+            if ($amount > 0.0 && '' !== $description) {
                 return new QuickInputResult(number_format($amount, 2, '.', ''), $description);
             }
         }
 
         // Try: description at the beginning, amount at the end
-        if (preg_match('/^(.+?)\s+(' . $amountPattern . ')$/u', $text, $m)) {
+        if (preg_match('/^(.+?)\s+('.$amountPattern.')$/u', $text, $m)) {
             $description = trim($m[1]);
-            $amount      = $this->normaliseAmount($m[2]);
+            $amount = $this->normaliseAmount($m[2]);
 
-            if ($amount > 0.0 && $description !== '') {
+            if ($amount > 0.0 && '' !== $description) {
                 return new QuickInputResult(number_format($amount, 2, '.', ''), $description);
             }
         }

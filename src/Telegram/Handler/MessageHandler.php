@@ -9,9 +9,9 @@ use App\Domain\Transaction\QuickInputParser;
 use App\Domain\Transaction\TransactionService;
 use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class MessageHandler
 {
@@ -23,16 +23,17 @@ class MessageHandler
         private readonly TransactionService $transactionService,
         private readonly TelegramSender $sender,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(array $update): void
     {
         $chatId = Payload::chatId($update);
-        $text   = Payload::text($update);
+        $text = Payload::text($update);
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
@@ -40,7 +41,7 @@ class MessageHandler
 
         $parsed = $this->quickInputParser->parse($text);
 
-        if ($parsed === null) {
+        if (null === $parsed) {
             $this->sender->sendMessage(
                 $chatId,
                 $this->translator->trans('quick_input.not_understood'),
@@ -58,7 +59,7 @@ class MessageHandler
 
         // Use the default account for quick entry
         $account = $this->accountRepo->findDefaultForFamily($user->getFamily());
-        if ($account === null) {
+        if (null === $account) {
             $this->sender->sendMessage(
                 $chatId,
                 $this->translator->trans('quick_input.no_default_account'),
@@ -68,20 +69,20 @@ class MessageHandler
         }
 
         $transaction = $this->transactionService->addExpense(
-            family:      $user->getFamily(),
-            user:        $user,
-            amount:      $parsed->amount,
-            category:    $category,
-            account:     $account,
+            family: $user->getFamily(),
+            user: $user,
+            amount: $parsed->amount,
+            category: $category,
+            account: $account,
             description: $parsed->description,
         );
 
-        $categoryText = $category !== null
+        $categoryText = null !== $category
             ? $category->getName()
             : $this->translator->trans('quick_input.no_category');
 
         $amountFormatted = number_format((float) $parsed->amount, 2, '.', ' ');
-        $currency        = $user->getFamily()->getCurrency();
+        $currency = $user->getFamily()->getCurrency();
 
         $keyboard = [
             'inline_keyboard' => [[

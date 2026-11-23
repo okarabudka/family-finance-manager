@@ -7,9 +7,9 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
 
 #[ORM\Entity(repositoryClass: \App\Repository\FamilyRepository::class)]
 #[ORM\Table(name: 'families')]
@@ -37,7 +37,7 @@ class Family
 
     public function __construct()
     {
-        $this->members  = new ArrayCollection();
+        $this->members = new ArrayCollection();
         $this->accounts = new ArrayCollection();
     }
 

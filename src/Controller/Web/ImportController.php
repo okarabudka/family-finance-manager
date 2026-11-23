@@ -26,10 +26,10 @@ class ImportController extends AbstractController
         PaginatorInterface $paginator,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -54,10 +54,10 @@ class ImportController extends AbstractController
         PaginatorInterface $paginator,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 

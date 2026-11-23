@@ -8,7 +8,7 @@ interface ImportParserInterface
 {
     /**
      * Parses a bank statement file and returns an array of raw transactions.
-     * Each element: ['date', 'amount', 'description', 'counterpartyName', 'counterpartyIban']
+     * Each element: ['date', 'amount', 'description', 'counterpartyName', 'counterpartyIban'].
      *
      * @return array<int, array{date: string, amount: float, description: string, counterpartyName: ?string, counterpartyIban: ?string}>
      */

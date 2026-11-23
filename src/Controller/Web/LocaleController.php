@@ -22,6 +22,6 @@ class LocaleController extends AbstractController
             return $this->redirect($referer);
         }
 
-        return $this->redirectToRoute($this->getUser() !== null ? 'dashboard' : 'app_login');
+        return $this->redirectToRoute(null !== $this->getUser() ? 'dashboard' : 'app_login');
     }
 }

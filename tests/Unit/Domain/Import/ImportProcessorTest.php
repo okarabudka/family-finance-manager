@@ -16,7 +16,6 @@ use App\Entity\CategoryType;
 use App\Entity\Family;
 use App\Entity\ImportFile;
 use App\Entity\ImportStatus;
-use App\Entity\ImportTransactionStatus;
 use App\Entity\User;
 use App\Repository\ImportTransactionRepository;
 use App\Telegram\TelegramNotifier;
@@ -43,12 +42,12 @@ class ImportProcessorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->parserFactory       = $this->createMock(ImportParserFactory::class);
+        $this->parserFactory = $this->createMock(ImportParserFactory::class);
         $this->categoryRuleService = $this->createMock(CategoryRuleService::class);
-        $this->transactionService  = $this->createMock(TransactionService::class);
-        $this->importTxRepo        = $this->createMock(ImportTransactionRepository::class);
-        $this->em                  = $this->createMock(EntityManagerInterface::class);
-        $this->notifier            = $this->createMock(TelegramNotifier::class);
+        $this->transactionService = $this->createMock(TransactionService::class);
+        $this->importTxRepo = $this->createMock(ImportTransactionRepository::class);
+        $this->em = $this->createMock(EntityManagerInterface::class);
+        $this->notifier = $this->createMock(TelegramNotifier::class);
 
         $this->processor = new ImportProcessor(
             $this->parserFactory,
@@ -59,7 +58,7 @@ class ImportProcessorTest extends TestCase
             $this->notifier,
         );
 
-        $this->family  = new Family();
+        $this->family = new Family();
         $this->family->setName('Test Family')->setCurrency('EUR');
         $this->setId($this->family, Uuid::v4());
 
@@ -84,9 +83,9 @@ class ImportProcessorTest extends TestCase
     {
         $rawTxs = [
             [
-                'date'             => '2025-03-01',
-                'amount'           => -50.0,
-                'description'      => 'REWE Supermarkt',
+                'date' => '2025-03-01',
+                'amount' => -50.0,
+                'description' => 'REWE Supermarkt',
                 'counterpartyName' => 'REWE',
                 'counterpartyIban' => null,
             ],
@@ -120,9 +119,9 @@ class ImportProcessorTest extends TestCase
     {
         $rawTxs = [
             [
-                'date'             => '2025-03-01',
-                'amount'           => -99.99,
-                'description'      => 'Unknown vendor',
+                'date' => '2025-03-01',
+                'amount' => -99.99,
+                'description' => 'Unknown vendor',
                 'counterpartyName' => null,
                 'counterpartyIban' => null,
             ],
@@ -157,9 +156,9 @@ class ImportProcessorTest extends TestCase
     {
         $rawTxs = [
             [
-                'date'             => '2025-03-01',
-                'amount'           => -50.0,
-                'description'      => 'Duplicate',
+                'date' => '2025-03-01',
+                'amount' => -50.0,
+                'description' => 'Duplicate',
                 'counterpartyName' => null,
                 'counterpartyIban' => null,
             ],
@@ -208,9 +207,9 @@ class ImportProcessorTest extends TestCase
     {
         $rawTxs = [
             [
-                'date'             => '2025-03-15',
-                'amount'           => 2500.0,
-                'description'      => 'Salary',
+                'date' => '2025-03-15',
+                'amount' => 2500.0,
+                'description' => 'Salary',
                 'counterpartyName' => 'Employer GmbH',
                 'counterpartyIban' => null,
             ],

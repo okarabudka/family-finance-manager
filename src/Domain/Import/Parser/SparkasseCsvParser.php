@@ -25,13 +25,13 @@ class SparkasseCsvParser implements ImportParserInterface
 {
     public function supports(string $format): bool
     {
-        return $format === 'csv_sparkasse';
+        return 'csv_sparkasse' === $format;
     }
 
     public function parse(string $filePath): array
     {
         $content = @file_get_contents($filePath);
-        if ($content === false) {
+        if (false === $content) {
             throw new \RuntimeException("Cannot read file: {$filePath}");
         }
 
@@ -56,7 +56,7 @@ class SparkasseCsvParser implements ImportParserInterface
             $field = static fn (string $name): string => \is_string($record[$name] ?? null) ? $record[$name] : '';
 
             $amountStr = $field('Betrag');
-            if ($amountStr === '') {
+            if ('' === $amountStr) {
                 continue;
             }
 
@@ -72,14 +72,14 @@ class SparkasseCsvParser implements ImportParserInterface
             $date = \DateTime::createFromFormat('d.m.y', $dateStr)
                 ?: \DateTime::createFromFormat('d.m.Y', $dateStr);
 
-            if ($date === false || $dateStr === '') {
+            if (false === $date || '' === $dateStr) {
                 continue;
             }
 
             $transactions[] = [
-                'date'             => $date->format('Y-m-d'),
-                'amount'           => $amount,
-                'description'      => trim($field('Verwendungszweck')),
+                'date' => $date->format('Y-m-d'),
+                'amount' => $amount,
+                'description' => trim($field('Verwendungszweck')),
                 'counterpartyName' => trim($field('Auftraggeber / Beguenstigter')) ?: null,
                 'counterpartyIban' => null, // Sparkasse CSV does not always include IBAN
             ];

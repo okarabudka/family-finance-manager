@@ -15,9 +15,9 @@ use App\Entity\User;
 use App\Repository\CategoryRepository;
 use App\Repository\ImportTransactionRepository;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Telegram\BotTranslator;
 
 class PendingImportHandler
 {
@@ -29,7 +29,8 @@ class PendingImportHandler
         private readonly TransactionService $transactionService,
         private readonly EntityManagerInterface $em,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * Sends the next pending ImportTransaction to the user for manual categorisation.
@@ -39,35 +40,35 @@ class PendingImportHandler
     {
         $pending = $this->importTxRepo->findFirstPending($importFile);
 
-        if ($pending === null) {
+        if (null === $pending) {
             $this->sender->sendMessage($chatId, $this->translator->trans('pending.all_processed'));
 
             return;
         }
 
-        $amount   = (float) $pending->getAmount();
-        $sign     = $amount > 0 ? '+' : '';
+        $amount = (float) $pending->getAmount();
+        $sign = $amount > 0 ? '+' : '';
         $currency = $importFile->getAccount()->getCurrency();
 
         $text = $this->translator->trans('pending.transaction', [
-            '%date%'        => $pending->getDate()->format('d.m.Y'),
-            '%amount%'      => $sign.number_format($amount, 2, '.', ' ').' '.$currency,
+            '%date%' => $pending->getDate()->format('d.m.Y'),
+            '%amount%' => $sign.number_format($amount, 2, '.', ' ').' '.$currency,
             '%description%' => (string) $pending->getRawDescription(),
         ])."\n";
 
-        if ($pending->getCounterpartyName() !== null) {
+        if (null !== $pending->getCounterpartyName()) {
             $text .= $this->translator->trans('pending.counterparty', ['%name%' => $pending->getCounterpartyName()])."\n";
         }
 
         $text .= "\n".$this->translator->trans('pending.choose');
 
-        $family     = $importFile->getAccount()->getFamily();
+        $family = $importFile->getAccount()->getFamily();
         $categories = $this->categoryRepo->findByFamily($family, CategoryType::Expense);
-        $keyboard   = $this->buildCategoryKeyboard($categories, $pending);
+        $keyboard = $this->buildCategoryKeyboard($categories, $pending);
 
         // Add skip button at the bottom
         $keyboard['inline_keyboard'][] = [
-            ['text' => $this->translator->trans('pending.button_skip'), 'callback_data' => 'pending:skip:' . $pending->getId()],
+            ['text' => $this->translator->trans('pending.button_skip'), 'callback_data' => 'pending:skip:'.$pending->getId()],
         ];
 
         $this->sender->sendMessage($chatId, $text, $keyboard, 'Markdown');
@@ -79,7 +80,7 @@ class PendingImportHandler
     public function handleCallback(int $chatId, string $callbackData): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
@@ -97,7 +98,7 @@ class PendingImportHandler
     private function handleSkip(int $chatId, string $txId, Family $family): void
     {
         $importTx = $this->loadImportTransactionForFamily($txId, $family);
-        if ($importTx === null) {
+        if (null === $importTx) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
@@ -112,41 +113,41 @@ class PendingImportHandler
     private function handleCategoryAssign(int $chatId, string $txId, string $catId, User $user, Family $family): void
     {
         $importTx = $this->loadImportTransactionForFamily($txId, $family);
-        if ($importTx === null) {
+        if (null === $importTx) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.transaction_not_found'));
 
             return;
         }
 
         $category = $this->categoryRepo->findByFamilyAndId($family, $catId);
-        if ($category === null) {
+        if (null === $category) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.category_not_found'));
 
             return;
         }
 
-        $amount  = (float) $importTx->getAmount();
+        $amount = (float) $importTx->getAmount();
         $account = $importTx->getImportFile()->getAccount();
 
         if ($amount >= 0) {
             $this->transactionService->addIncome(
-                family:      $family,
-                user:        $user,
-                amount:      (string) abs($amount),
-                category:    $category,
-                account:     $account,
+                family: $family,
+                user: $user,
+                amount: (string) abs($amount),
+                category: $category,
+                account: $account,
                 description: $importTx->getRawDescription() ?? '',
-                date:        $importTx->getDate(),
+                date: $importTx->getDate(),
             );
         } else {
             $this->transactionService->addExpense(
-                family:      $family,
-                user:        $user,
-                amount:      (string) abs($amount),
-                category:    $category,
-                account:     $account,
+                family: $family,
+                user: $user,
+                amount: (string) abs($amount),
+                category: $category,
+                account: $account,
                 description: $importTx->getRawDescription() ?? '',
-                date:        $importTx->getDate(),
+                date: $importTx->getDate(),
             );
         }
 
@@ -159,7 +160,7 @@ class PendingImportHandler
     private function loadImportTransactionForFamily(string $txId, Family $family): ?ImportTransaction
     {
         $importTx = $this->importTxRepo->find($txId);
-        if ($importTx === null) {
+        if (null === $importTx) {
             return null;
         }
 
@@ -181,9 +182,9 @@ class PendingImportHandler
         $rows = [];
         foreach (array_chunk($categories, 2) as $pair) {
             $rows[] = array_map(
-                static fn(Category $c) => [
-                    'text'          => $c->getName(),
-                    'callback_data' => 'pending:category:' . $pending->getId() . ':' . $c->getId(),
+                static fn (Category $c) => [
+                    'text' => $c->getName(),
+                    'callback_data' => 'pending:category:'.$pending->getId().':'.$c->getId(),
                 ],
                 $pair,
             );

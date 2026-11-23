@@ -16,7 +16,8 @@ class MeterService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly MeterReadingRepository $meterReadingRepository,
-    ) {}
+    ) {
+    }
 
     public function saveReading(
         Family $family,
@@ -45,20 +46,20 @@ class MeterService
 
     /**
      * Returns readings with computed consumption delta.
-     * Each item: ['reading' => MeterReading, 'consumption' => float|null]
+     * Each item: ['reading' => MeterReading, 'consumption' => float|null].
      *
      * @return array<int, array{reading: MeterReading, consumption: float|null}>
      */
     public function getReadingsWithConsumption(Family $family, MeterType $type): array
     {
         $readings = $this->meterReadingRepository->findByFamilyAndType($family, $type);
-        $result   = [];
-        $prev     = null;
+        $result = [];
+        $prev = null;
 
         foreach ($readings as $reading) {
-            $consumption = $prev !== null ? round($reading->getValue() - $prev->getValue(), 2) : null;
-            $result[]    = ['reading' => $reading, 'consumption' => $consumption];
-            $prev        = $reading;
+            $consumption = null !== $prev ? round($reading->getValue() - $prev->getValue(), 2) : null;
+            $result[] = ['reading' => $reading, 'consumption' => $consumption];
+            $prev = $reading;
         }
 
         return array_reverse($result);
@@ -74,13 +75,13 @@ class MeterService
         $readings = $this->meterReadingRepository->findByFamilyAndType($family, $type);
 
         $labels = [];
-        $data   = [];
-        $prev   = null;
+        $data = [];
+        $prev = null;
 
         foreach ($readings as $reading) {
-            if ($prev !== null) {
+            if (null !== $prev) {
                 $labels[] = $reading->getReadingDate()->format('Y-m-d');
-                $data[]   = round($reading->getValue() - $prev->getValue(), 2);
+                $data[] = round($reading->getValue() - $prev->getValue(), 2);
             }
             $prev = $reading;
         }

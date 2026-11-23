@@ -10,14 +10,14 @@ use App\Entity\ImportFile;
 use App\Message\ProcessImportMessage;
 use App\Repository\AccountRepository;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
-use App\Telegram\TelegramFileDownloader;
 use App\Telegram\Payload;
+use App\Telegram\TelegramFileDownloader;
 use App\Telegram\TelegramSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
-use App\Telegram\BotTranslator;
 
 class ImportConversation implements ConversationInterface
 {
@@ -31,7 +31,8 @@ class ImportConversation implements ConversationInterface
         private readonly EntityManagerInterface $em,
         private readonly MessageBusInterface $messageBus,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $update
@@ -56,15 +57,16 @@ class ImportConversation implements ConversationInterface
     {
         $callbackData = Payload::callbackData($update);
 
-        if ($callbackData === null || !str_starts_with($callbackData, 'import:account:')) {
+        if (null === $callbackData || !str_starts_with($callbackData, 'import:account:')) {
             $this->sender->sendMessage($chatId, $this->translator->trans('import.choose_account_from_buttons'));
+
             return;
         }
 
         $accountId = substr($callbackData, strlen('import:account:'));
 
         $state['data'] = [...Payload::array($state, 'data'), 'accountId' => $accountId];
-        $state['step']              = 1;
+        $state['step'] = 1;
         $this->conversationManager->updateState($chatId, $state);
 
         $this->sender->sendMessage(
@@ -79,19 +81,21 @@ class ImportConversation implements ConversationInterface
      */
     private function handleFileUpload(int $chatId, array $update, array $state): void
     {
-        $fileId   = Payload::string($update, 'message', 'document', 'file_id');
+        $fileId = Payload::string($update, 'message', 'document', 'file_id');
         $fileName = Payload::string($update, 'message', 'document', 'file_name') ?? 'import';
 
-        if ($fileId === null) {
+        if (null === $fileId) {
             $this->sender->sendMessage($chatId, $this->translator->trans('import.send_as_attachment'));
+
             return;
         }
 
         // Download file from Telegram to local storage
         $localPath = $this->telegramFileDownloader->download($fileId, 'imports');
 
-        if ($localPath === null) {
+        if (null === $localPath) {
             $this->sender->sendMessage($chatId, $this->translator->trans('import.download_failed'));
+
             return;
         }
 
@@ -105,18 +109,20 @@ class ImportConversation implements ConversationInterface
                 $this->translator->trans('import.unsupported_format'),
             );
             $this->conversationManager->end($chatId);
+
             return;
         }
 
-        $user    = $this->userRepo->findByTelegramChatId($chatId);
-        $family  = $user?->getFamily();
-        $account = $family !== null
+        $user = $this->userRepo->findByTelegramChatId($chatId);
+        $family = $user?->getFamily();
+        $account = null !== $family
             ? $this->accountRepo->findByFamilyAndId($family, Payload::string($state, 'data', 'accountId') ?? '')
             : null;
 
-        if ($user === null || $account === null) {
+        if (null === $user || null === $account) {
             $this->sender->sendMessage($chatId, $this->translator->trans('import.account_not_found'));
             $this->conversationManager->end($chatId);
+
             return;
         }
 

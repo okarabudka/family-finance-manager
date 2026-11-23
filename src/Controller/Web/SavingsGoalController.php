@@ -24,10 +24,10 @@ class SavingsGoalController extends AbstractController
         SavingsGoalRepository $savingsGoalRepository,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -44,10 +44,10 @@ class SavingsGoalController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             return $this->redirectToRoute('dashboard');
         }
 
@@ -66,7 +66,7 @@ class SavingsGoalController extends AbstractController
         }
 
         return $this->render('savings_goal/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'savings_goal.new',
         ]);
     }
@@ -78,10 +78,10 @@ class SavingsGoalController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$goal->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$goal->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
@@ -97,9 +97,9 @@ class SavingsGoalController extends AbstractController
         }
 
         return $this->render('savings_goal/form.html.twig', [
-            'form'  => $form,
+            'form' => $form,
             'title' => 'savings_goal.edit',
-            'goal'  => $goal,
+            'goal' => $goal,
         ]);
     }
 
@@ -110,14 +110,14 @@ class SavingsGoalController extends AbstractController
         EntityManagerInterface $em,
     ): Response {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
-        if ($family === null || !$goal->getFamily()->getId()->equals($family->getId())) {
+        if (null === $family || !$goal->getFamily()->getId()->equals($family->getId())) {
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isCsrfTokenValid('delete_savings_goal_' . $goal->getId(), $request->request->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete_savings_goal_'.$goal->getId(), $request->request->getString('_token'))) {
             $em->remove($goal);
             $em->flush();
             $this->addFlash('success', 'flash.savings_goal.deleted');

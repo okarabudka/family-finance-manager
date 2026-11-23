@@ -12,7 +12,8 @@ class CategoryRuleService
 {
     public function __construct(
         private readonly CategoryRuleRepository $ruleRepo,
-    ) {}
+    ) {
+    }
 
     /**
      * Determines a transaction category based on counterparty IBAN and description keywords.
@@ -44,5 +45,4 @@ class CategoryRuleService
 
         return null;
     }
-
 }

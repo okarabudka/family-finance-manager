@@ -6,13 +6,13 @@ namespace App\Command;
 
 use App\Domain\Suggestion\SuggestionService;
 use App\Repository\FamilyRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\TelegramSender;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use App\Telegram\BotTranslator;
 
 #[AsCommand(
     name: 'app:report:weekly',
@@ -40,7 +40,7 @@ class WeeklyReportCommand extends Command
             } catch (\Throwable $e) {
                 $this->logger->error('WeeklyReportCommand: getSuggestions failed', [
                     'family' => (string) $family->getId(),
-                    'error'  => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
                 $output->writeln(sprintf('<error>Skipped family %s: %s</error>', $family->getId(), $e->getMessage()));
                 continue;
@@ -48,7 +48,7 @@ class WeeklyReportCommand extends Command
 
             foreach ($family->getMembers() as $user) {
                 $chatId = $user->getTelegramChatId();
-                if ($chatId === null) {
+                if (null === $chatId) {
                     continue;
                 }
 

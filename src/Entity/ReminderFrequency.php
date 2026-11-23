@@ -9,15 +9,15 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum ReminderFrequency: string implements TranslatableInterface
 {
-    case Daily   = 'daily';
-    case Weekly  = 'weekly';
+    case Daily = 'daily';
+    case Weekly = 'weekly';
     case Monthly = 'monthly';
 
     public function label(): string
     {
         return match ($this) {
-            self::Daily   => 'Daily',
-            self::Weekly  => 'Weekly',
+            self::Daily => 'Daily',
+            self::Weekly => 'Weekly',
             self::Monthly => 'Monthly',
         };
     }

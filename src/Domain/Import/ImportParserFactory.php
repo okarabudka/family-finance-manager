@@ -11,7 +11,8 @@ class ImportParserFactory
      */
     public function __construct(
         private readonly iterable $parsers,
-    ) {}
+    ) {
+    }
 
     public function getParser(string $format): ImportParserInterface
     {

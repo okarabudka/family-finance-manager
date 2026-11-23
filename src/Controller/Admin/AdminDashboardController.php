@@ -16,7 +16,8 @@ class AdminDashboardController extends AbstractDashboardController
 {
     public function __construct(
         private readonly TranslatorInterface $translator,
-    ) {}
+    ) {
+    }
 
     public function index(): Response
     {

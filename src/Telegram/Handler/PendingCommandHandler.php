@@ -6,9 +6,9 @@ namespace App\Telegram\Handler;
 
 use App\Repository\ImportTransactionRepository;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\CommandHandlerInterface;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class PendingCommandHandler implements CommandHandlerInterface
 {
@@ -18,13 +18,14 @@ class PendingCommandHandler implements CommandHandlerInterface
         private readonly PendingImportHandler $pendingImportHandler,
         private readonly TelegramSender $sender,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function handle(int $chatId, array $update): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
 
             return;
@@ -32,7 +33,7 @@ class PendingCommandHandler implements CommandHandlerInterface
 
         $pending = $this->importTxRepo->findFirstPendingForFamily($user->getFamily());
 
-        if ($pending === null) {
+        if (null === $pending) {
             $this->sender->sendMessage($chatId, $this->translator->trans('pending.none'));
 
             return;

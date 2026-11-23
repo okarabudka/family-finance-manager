@@ -10,7 +10,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 enum CategoryType: string implements TranslatableInterface
 {
     case Expense = 'expense';
-    case Income  = 'income';
+    case Income = 'income';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {

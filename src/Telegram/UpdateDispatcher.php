@@ -22,7 +22,8 @@ class UpdateDispatcher
         private readonly TransactionCallbackHandler $transactionCallbackHandler,
         private readonly ReportCommandHandler $reportCommandHandler,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $update */
     public function dispatch(array $update): void
@@ -42,7 +43,7 @@ class UpdateDispatcher
     {
         $chatId = Payload::chatId($update);
 
-        if ($chatId === 0) {
+        if (0 === $chatId) {
             return;
         }
 
@@ -88,7 +89,7 @@ class UpdateDispatcher
         if (str_starts_with($text, '/')) {
             $command = $this->extractCommand($text);
 
-            if ($command === 'cancel') {
+            if ('cancel' === $command) {
                 // No active conversation — nothing to cancel
                 $this->sender->sendMessage($chatId, $this->translator->trans('dispatcher.nothing_to_cancel'));
 
@@ -115,7 +116,7 @@ class UpdateDispatcher
     {
         // Strip leading slash, remove @BotName suffix, take first word
         $withoutSlash = ltrim($text, '/');
-        $firstWord    = explode(' ', $withoutSlash)[0];
+        $firstWord = explode(' ', $withoutSlash)[0];
 
         return explode('@', $firstWord)[0];
     }

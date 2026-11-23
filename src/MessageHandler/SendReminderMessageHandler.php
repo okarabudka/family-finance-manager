@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\Family;
 use App\Entity\ReminderTemplate;
 use App\Entity\User;
 use App\Message\SendReminderMessage;
@@ -28,13 +27,14 @@ class SendReminderMessageHandler
         private readonly LoggerInterface $logger,
         private readonly MailerInterface $mailer,
         private readonly string $mailerFrom = 'noreply@family-finance.local',
-    ) {}
+    ) {
+    }
 
     public function __invoke(SendReminderMessage $message): void
     {
         $template = $this->reminderTemplateRepository->find($message->reminderTemplateId);
 
-        if ($template === null || !$template->isActive()) {
+        if (null === $template || !$template->isActive()) {
             return;
         }
 
@@ -59,7 +59,7 @@ class SendReminderMessageHandler
     {
         $family = $template->getFamily();
 
-        if ($family !== null) {
+        if (null !== $family) {
             return $this->userRepo->findByFamily($family);
         }
 
@@ -70,7 +70,7 @@ class SendReminderMessageHandler
     private function sendTelegram(User $user, string $text): void
     {
         $chatId = $user->getTelegramChatId();
-        if ($chatId === null) {
+        if (null === $chatId) {
             return;
         }
 
@@ -78,7 +78,7 @@ class SendReminderMessageHandler
             $this->telegramSender->sendMessage($chatId, $text);
         } catch (\Throwable $e) {
             $this->logger->error('Reminder Telegram send failed', [
-                'user'  => (string) $user->getId(),
+                'user' => (string) $user->getId(),
                 'error' => $e->getMessage(),
             ]);
         }
@@ -90,13 +90,13 @@ class SendReminderMessageHandler
             $email = (new Email())
                 ->from($this->mailerFrom)
                 ->to($user->getEmail())
-                ->subject('[Family Finance] ' . $template->getName())
+                ->subject('[Family Finance] '.$template->getName())
                 ->text($template->getMessageText());
 
             $this->mailer->send($email);
         } catch (\Throwable $e) {
             $this->logger->error('Reminder email send failed', [
-                'user'  => (string) $user->getId(),
+                'user' => (string) $user->getId(),
                 'error' => $e->getMessage(),
             ]);
         }

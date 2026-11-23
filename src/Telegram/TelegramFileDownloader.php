@@ -17,7 +17,8 @@ class TelegramFileDownloader
         private readonly string $botToken,
         private readonly string $uploadDir,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     /**
      * Downloads a file by its Telegram file_id and saves it to local storage.
@@ -29,7 +30,7 @@ class TelegramFileDownloader
             // Step 1: resolve the file path on Telegram servers
             $response = $this->httpClient->request(
                 'GET',
-                self::API_BASE . $this->botToken . '/getFile',
+                self::API_BASE.$this->botToken.'/getFile',
                 ['query' => ['file_id' => $fileId]],
             );
 
@@ -45,17 +46,17 @@ class TelegramFileDownloader
             // Step 2: download the actual file bytes
             $fileResponse = $this->httpClient->request(
                 'GET',
-                self::FILE_BASE . $this->botToken . '/' . $telegramFilePath,
+                self::FILE_BASE.$this->botToken.'/'.$telegramFilePath,
             );
 
-            $localDir = rtrim($this->uploadDir, '/') . '/' . trim($subDir, '/');
+            $localDir = rtrim($this->uploadDir, '/').'/'.trim($subDir, '/');
             if (!is_dir($localDir) && !mkdir($localDir, 0755, true)) {
                 throw new \RuntimeException("Cannot create directory: $localDir");
             }
 
-            $extension  = pathinfo($telegramFilePath, PATHINFO_EXTENSION);
-            $localName  = bin2hex(random_bytes(16)) . ($extension !== '' ? '.' . $extension : '');
-            $localPath  = $localDir . '/' . $localName;
+            $extension = pathinfo($telegramFilePath, PATHINFO_EXTENSION);
+            $localName = bin2hex(random_bytes(16)).('' !== $extension ? '.'.$extension : '');
+            $localPath = $localDir.'/'.$localName;
 
             file_put_contents($localPath, $fileResponse->getContent());
 
@@ -63,7 +64,7 @@ class TelegramFileDownloader
         } catch (\Throwable $e) {
             $this->logger->error('TelegramFileDownloader failed', [
                 'file_id' => $fileId,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return null;

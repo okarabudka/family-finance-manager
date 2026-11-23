@@ -9,11 +9,11 @@ use App\Entity\CategoryType;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\UserRepository;
+use App\Telegram\BotTranslator;
 use App\Telegram\ConversationInterface;
 use App\Telegram\ConversationManager;
 use App\Telegram\Payload;
 use App\Telegram\TelegramSender;
-use App\Telegram\BotTranslator;
 
 class AddExpenseConversation implements ConversationInterface
 {
@@ -25,7 +25,8 @@ class AddExpenseConversation implements ConversationInterface
         private readonly ConversationManager $conversationManager,
         private readonly UserRepository $userRepo,
         private readonly BotTranslator $translator,
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $update
@@ -33,8 +34,8 @@ class AddExpenseConversation implements ConversationInterface
      */
     public function handle(int $chatId, array $update, array $state): void
     {
-        $step         = Payload::int($state, 'step') ?? 0;
-        $text         = Payload::text($update);
+        $step = Payload::int($state, 'step') ?? 0;
+        $text = Payload::text($update);
         $callbackData = Payload::callbackData($update);
 
         match ($step) {
@@ -68,11 +69,11 @@ class AddExpenseConversation implements ConversationInterface
         }
 
         $state['data'] = [...Payload::array($state, 'data'), 'amount' => $amount];
-        $state['step']           = 2;
+        $state['step'] = 2;
         $this->conversationManager->updateState($chatId, $state);
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
@@ -88,19 +89,19 @@ class AddExpenseConversation implements ConversationInterface
     /** @param array<string, mixed> $state */
     private function handleCategory(int $chatId, ?string $callbackData, array $state): void
     {
-        if ($callbackData === null || !str_starts_with($callbackData, 'category:')) {
+        if (null === $callbackData || !str_starts_with($callbackData, 'category:')) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_category_from_list'));
 
             return;
         }
 
-        $categoryId              = substr($callbackData, 9);
+        $categoryId = substr($callbackData, 9);
         $state['data'] = [...Payload::array($state, 'data'), 'categoryId' => $categoryId];
-        $state['step']           = 3;
+        $state['step'] = 3;
         $this->conversationManager->updateState($chatId, $state);
 
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
@@ -115,15 +116,15 @@ class AddExpenseConversation implements ConversationInterface
     /** @param array<string, mixed> $state */
     private function handleAccount(int $chatId, ?string $callbackData, array $state): void
     {
-        if ($callbackData === null || !str_starts_with($callbackData, 'account:')) {
+        if (null === $callbackData || !str_starts_with($callbackData, 'account:')) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.choose_account_from_list'));
 
             return;
         }
 
-        $accountId                = substr($callbackData, 8);
+        $accountId = substr($callbackData, 8);
         $state['data'] = [...Payload::array($state, 'data'), 'accountId' => $accountId];
-        $state['step']            = 4;
+        $state['step'] = 4;
         $this->conversationManager->updateState($chatId, $state);
 
         $this->sender->sendMessage($chatId, $this->translator->trans('expense.ask_description'));
@@ -133,7 +134,7 @@ class AddExpenseConversation implements ConversationInterface
     private function handleDescription(int $chatId, string $text, array $state): void
     {
         $description = trim($text);
-        $state['data'] = [...Payload::array($state, 'data'), 'description' => ($description === '-') ? '' : $description];
+        $state['data'] = [...Payload::array($state, 'data'), 'description' => ('-' === $description) ? '' : $description];
         $state['step'] = 5;
         $this->conversationManager->updateState($chatId, $state);
 
@@ -148,11 +149,11 @@ class AddExpenseConversation implements ConversationInterface
     {
         $trimmed = trim($text);
 
-        if ($trimmed === '' || \in_array(mb_strtolower($trimmed), ['today', mb_strtolower($this->translator->trans('common.today'))], true)) {
+        if ('' === $trimmed || \in_array(mb_strtolower($trimmed), ['today', mb_strtolower($this->translator->trans('common.today'))], true)) {
             $date = new \DateTimeImmutable();
         } else {
             $date = \DateTimeImmutable::createFromFormat('d.m.Y', $trimmed);
-            if ($date === false) {
+            if (false === $date) {
                 $this->sender->sendMessage(
                     $chatId,
                     $this->translator->trans('common.invalid_date', ['%today%' => $this->translator->trans('common.today')]),
@@ -172,7 +173,7 @@ class AddExpenseConversation implements ConversationInterface
     private function createTransaction(int $chatId, array $state): void
     {
         $user = $this->userRepo->findByTelegramChatId($chatId);
-        if ($user === null || $user->getFamily() === null) {
+        if (null === $user || null === $user->getFamily()) {
             $this->sender->sendMessage($chatId, $this->translator->trans('common.register_first'));
             $this->conversationManager->end($chatId);
 
@@ -184,7 +185,7 @@ class AddExpenseConversation implements ConversationInterface
         $date = new \DateTimeImmutable(Payload::string($data, 'date') ?? 'now');
 
         $account = $this->accountRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'accountId') ?? '');
-        if ($account === null) {
+        if (null === $account) {
             $this->sender->sendMessage($chatId, $this->translator->trans('expense.account_not_found'));
             $this->conversationManager->end($chatId);
 
@@ -192,32 +193,33 @@ class AddExpenseConversation implements ConversationInterface
         }
 
         $transaction = $this->transactionService->addExpense(
-            family:      $user->getFamily(),
-            user:        $user,
-            amount:      Payload::string($data, 'amount') ?? '0',
-            category:    $this->categoryRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'categoryId') ?? ''),
-            account:     $account,
+            family: $user->getFamily(),
+            user: $user,
+            amount: Payload::string($data, 'amount') ?? '0',
+            category: $this->categoryRepo->findByFamilyAndId($user->getFamily(), Payload::string($data, 'categoryId') ?? ''),
+            account: $account,
             description: Payload::string($data, 'description') ?? '',
-            date:        $date,
+            date: $date,
         );
 
         $this->conversationManager->end($chatId);
 
-        $categoryName    = $transaction->getCategory()?->getName() ?? $this->translator->trans('common.no_category');
+        $categoryName = $transaction->getCategory()?->getName() ?? $this->translator->trans('common.no_category');
         $amountFormatted = number_format((float) $transaction->getAmount(), 2, '.', ' ');
 
         $this->sender->sendMessage(
             $chatId,
             $this->translator->trans('expense.recorded', [
-                '%amount%'   => "{$amountFormatted} {$transaction->getCurrency()}",
+                '%amount%' => "{$amountFormatted} {$transaction->getCurrency()}",
                 '%category%' => $categoryName,
-                '%date%'     => $transaction->getExecutedAt()->format('d.m.Y'),
+                '%date%' => $transaction->getExecutedAt()->format('d.m.Y'),
             ]),
         );
     }
 
     /**
      * @param \App\Entity\Category[] $categories
+     *
      * @return array<string, mixed>
      */
     private function buildCategoryKeyboard(array $categories): array
@@ -227,8 +229,8 @@ class AddExpenseConversation implements ConversationInterface
             $row = [];
             foreach ($rowCategories as $category) {
                 $row[] = [
-                    'text'          => $category->getName(),
-                    'callback_data' => 'category:' . $category->getId(),
+                    'text' => $category->getName(),
+                    'callback_data' => 'category:'.$category->getId(),
                 ];
             }
             $rows[] = $row;
@@ -239,6 +241,7 @@ class AddExpenseConversation implements ConversationInterface
 
     /**
      * @param \App\Entity\Account[] $accounts
+     *
      * @return array<string, mixed>
      */
     private function buildAccountKeyboard(array $accounts): array
@@ -248,8 +251,8 @@ class AddExpenseConversation implements ConversationInterface
             $row = [];
             foreach ($rowAccounts as $account) {
                 $row[] = [
-                    'text'          => $account->getName(),
-                    'callback_data' => 'account:' . $account->getId(),
+                    'text' => $account->getName(),
+                    'callback_data' => 'account:'.$account->getId(),
                 ];
             }
             $rows[] = $row;

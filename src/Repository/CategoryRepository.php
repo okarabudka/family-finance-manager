@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Category;
-use App\Entity\Family;
 use App\Entity\CategoryType;
+use App\Entity\Family;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;

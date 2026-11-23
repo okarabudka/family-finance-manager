@@ -17,7 +17,8 @@ class ChartGenerator
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $storagePath,
-    ) {}
+    ) {
+    }
 
     /**
      * Generates a doughnut (pie) chart and returns the path to the PNG file.
@@ -30,15 +31,15 @@ class ChartGenerator
         $config = [
             'type' => 'doughnut',
             'data' => [
-                'labels'   => $labels,
+                'labels' => $labels,
                 'datasets' => [[
-                    'data'            => $data,
+                    'data' => $data,
                     'backgroundColor' => $this->generateColors(count($data)),
                 ]],
             ],
             'options' => [
                 'plugins' => [
-                    'title'  => ['display' => true, 'text' => $title, 'font' => ['size' => 16]],
+                    'title' => ['display' => true, 'text' => $title, 'font' => ['size' => 16]],
                     'legend' => ['position' => 'bottom'],
                 ],
             ],
@@ -59,7 +60,7 @@ class ChartGenerator
         $config = [
             'type' => 'bar',
             'data' => [
-                'labels'   => $labels,
+                'labels' => $labels,
                 'datasets' => [
                     ['label' => 'Expenses', 'data' => $expenses, 'backgroundColor' => '#EF4444'],
                     ['label' => 'Income',   'data' => $income,   'backgroundColor' => '#22C55E'],
@@ -81,24 +82,24 @@ class ChartGenerator
     /** @param array<string, mixed> $config */
     private function requestChart(array $config, int $width, int $height): string
     {
-        $chartsDir = rtrim($this->storagePath, '/') . '/charts';
+        $chartsDir = rtrim($this->storagePath, '/').'/charts';
         if (!is_dir($chartsDir)) {
             mkdir($chartsDir, 0755, true);
         }
 
-        $tmpFile = $chartsDir . '/' . bin2hex(random_bytes(16)) . '.png';
+        $tmpFile = $chartsDir.'/'.bin2hex(random_bytes(16)).'.png';
 
         try {
             $response = $this->httpClient->request('GET', 'https://quickchart.io/chart', [
                 'query' => [
-                    'c'               => json_encode($config, JSON_THROW_ON_ERROR),
-                    'width'           => $width,
-                    'height'          => $height,
+                    'c' => json_encode($config, JSON_THROW_ON_ERROR),
+                    'width' => $width,
+                    'height' => $height,
                     'backgroundColor' => 'white',
                 ],
             ]);
 
-            if (file_put_contents($tmpFile, $response->getContent()) === false) {
+            if (false === file_put_contents($tmpFile, $response->getContent())) {
                 throw new \RuntimeException("Failed to write chart image to {$tmpFile}");
             }
         } catch (\Throwable $e) {
@@ -126,7 +127,7 @@ class ChartGenerator
         ];
 
         $colors = [];
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; ++$i) {
             $colors[] = $palette[$i % count($palette)];
         }
 

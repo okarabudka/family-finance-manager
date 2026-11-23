@@ -14,11 +14,12 @@ class AccountService
     public function __construct(
         private readonly TransactionRepository $transactionRepo,
         private readonly CacheInterface $cache,
-    ) {}
+    ) {
+    }
 
     public function getBalance(Account $account): float
     {
-        $cacheKey = 'account_balance_' . $account->getId();
+        $cacheKey = 'account_balance_'.$account->getId();
 
         return $this->cache->get($cacheKey, function () use ($account) {
             return $this->calculateBalance($account);
@@ -29,7 +30,7 @@ class AccountService
     public function getTotalBalance(Family $family): array
     {
         $accounts = $family->getAccounts()->filter(
-            fn(Account $a) => $a->isActive() && $a->isIncludeInTotal()
+            fn (Account $a) => $a->isActive() && $a->isIncludeInTotal()
         );
 
         $totals = [];
@@ -56,6 +57,6 @@ class AccountService
 
     public function invalidateCache(Account $account): void
     {
-        $this->cache->delete('account_balance_' . $account->getId());
+        $this->cache->delete('account_balance_'.$account->getId());
     }
 }

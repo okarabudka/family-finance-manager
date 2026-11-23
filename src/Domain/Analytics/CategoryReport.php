@@ -14,5 +14,6 @@ readonly class CategoryReport
         public float $percent,
         public ?float $budgetAmount,
         public ?float $budgetUsedPercent,
-    ) {}
+    ) {
+    }
 }

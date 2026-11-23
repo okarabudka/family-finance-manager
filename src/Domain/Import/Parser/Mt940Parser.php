@@ -20,13 +20,13 @@ class Mt940Parser implements ImportParserInterface
 {
     public function supports(string $format): bool
     {
-        return $format === 'mt940';
+        return 'mt940' === $format;
     }
 
     public function parse(string $filePath): array
     {
         $content = @file_get_contents($filePath);
-        if ($content === false) {
+        if (false === $content) {
             throw new \RuntimeException("Cannot read file: {$filePath}");
         }
 
@@ -60,29 +60,29 @@ class Mt940Parser implements ImportParserInterface
 
         foreach ($txMatches as $i => $match) {
             $valueDateStr = $match[1][0];   // YYMMDD
-            $creditDebit  = $match[3][0];   // C or D
-            $amountStr    = $match[5][0];   // e.g. 1234,56
+            $creditDebit = $match[3][0];   // C or D
+            $amountStr = $match[5][0];   // e.g. 1234,56
 
             // Parse amount
             $amount = (float) str_replace(',', '.', $amountStr);
-            if ($creditDebit === 'D') {
+            if ('D' === $creditDebit) {
                 $amount = -$amount;
             }
 
             // Parse date: YYMMDD → DateTimeImmutable
             $date = \DateTimeImmutable::createFromFormat('ymd', $valueDateStr);
-            if ($date === false) {
+            if (false === $date) {
                 continue;
             }
 
             // Find the :86: block that comes right after this :61: block
             $description = '';
-            $raw         = '';
-            $txOffset    = $match[0][1];
+            $raw = '';
+            $txOffset = $match[0][1];
             foreach ($descMatches as $descMatch) {
                 $descOffset = $descMatch[0][1];
                 if ($descOffset > $txOffset) {
-                    $raw         = $descMatch[1][0];
+                    $raw = $descMatch[1][0];
                     $description = $this->cleanDescription($raw);
                     break;
                 }
@@ -93,11 +93,11 @@ class Mt940Parser implements ImportParserInterface
             $counterpartyName = $this->extractName($raw);
 
             $transactions[] = [
-                'date'             => $date->format('Y-m-d'),
-                'amount'           => $amount,
-                'description'      => $description,
-                'counterpartyName' => $counterpartyName !== '' ? $counterpartyName : null,
-                'counterpartyIban' => $counterpartyIban !== '' ? $counterpartyIban : null,
+                'date' => $date->format('Y-m-d'),
+                'amount' => $amount,
+                'description' => $description,
+                'counterpartyName' => '' !== $counterpartyName ? $counterpartyName : null,
+                'counterpartyIban' => '' !== $counterpartyIban ? $counterpartyIban : null,
             ];
         }
 

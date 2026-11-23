@@ -24,13 +24,14 @@ class SettingsController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'settings', methods: ['GET', 'POST'])]
     public function index(Request $request): Response
     {
         /** @var User $user */
-        $user   = $this->getUser();
+        $user = $this->getUser();
         $family = $user->getFamily();
 
         // --- Profile form ---
@@ -40,7 +41,7 @@ class SettingsController extends AbstractController
         if ($profileForm->isSubmitted() && $profileForm->isValid()) {
             $newPassword = $profileForm->get('newPassword')->getData();
 
-            if (\is_string($newPassword) && $newPassword !== '') {
+            if (\is_string($newPassword) && '' !== $newPassword) {
                 $currentPassword = $profileForm->get('currentPassword')->getData();
                 $currentPassword = \is_string($currentPassword) ? $currentPassword : '';
 
@@ -62,7 +63,7 @@ class SettingsController extends AbstractController
         // --- Family form ---
         $familyForm = null;
 
-        if ($family !== null) {
+        if (null !== $family) {
             $familyForm = $this->createForm(FamilySettingsFormType::class, $family);
             $familyForm->handleRequest($request);
 
@@ -76,9 +77,9 @@ class SettingsController extends AbstractController
 
         return $this->render('settings/index.html.twig', [
             'profileForm' => $profileForm,
-            'familyForm'  => $familyForm,
-            'user'        => $user,
-            'family'      => $family,
+            'familyForm' => $familyForm,
+            'user' => $user,
+            'family' => $family,
         ]);
     }
 
@@ -87,9 +88,9 @@ class SettingsController extends AbstractController
     {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-        $family      = $currentUser->getFamily();
+        $family = $currentUser->getFamily();
 
-        if ($family === null) {
+        if (null === $family) {
             $this->addFlash('error', 'flash.settings.no_family');
 
             return $this->redirectToRoute('settings');
@@ -99,14 +100,14 @@ class SettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $name     = $form->get('name')->getData();
-            $email    = $form->get('email')->getData();
-            $role     = $form->get('roles')->getData();
+            $name = $form->get('name')->getData();
+            $email = $form->get('email')->getData();
+            $role = $form->get('roles')->getData();
             $password = $form->get('password')->getData();
             \assert(\is_string($name) && \is_string($email) && \is_string($role) && \is_string($password), 'guaranteed by the form constraints');
 
             $existingUser = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
-            if ($existingUser !== null) {
+            if (null !== $existingUser) {
                 $this->addFlash('error', 'flash.settings.email_taken');
 
                 return $this->redirectToRoute('settings_users_new');
