@@ -44,7 +44,7 @@ class TransactionService
         $transaction = new Transaction();
         $transaction
             ->setType(TransactionType::Expense)
-            ->setAmount((string) abs((float) $amount))
+            ->setAmount(self::normalizeAmount($amount))
             ->setCurrency($account->getCurrency())
             ->setDescription($description)
             ->setSourceAccount($account)
@@ -74,7 +74,7 @@ class TransactionService
         $transaction = new Transaction();
         $transaction
             ->setType(TransactionType::Income)
-            ->setAmount((string) abs((float) $amount))
+            ->setAmount(self::normalizeAmount($amount))
             ->setCurrency($account->getCurrency())
             ->setDescription($description)
             ->setTargetAccount($account)
@@ -104,7 +104,7 @@ class TransactionService
         $transaction = new Transaction();
         $transaction
             ->setType(TransactionType::Transfer)
-            ->setAmount((string) abs((float) $amount))
+            ->setAmount(self::normalizeAmount($amount))
             ->setCurrency($from->getCurrency())
             ->setDescription($description)
             ->setSourceAccount($from)
@@ -130,7 +130,7 @@ class TransactionService
         $oldDate = $transaction->getExecutedAt();
 
         if (isset($data['amount'])) {
-            $transaction->setAmount((string) abs((float) $data['amount']));
+            $transaction->setAmount(self::normalizeAmount($data['amount']));
         }
         if (isset($data['description'])) {
             $transaction->setDescription($data['description']);
@@ -179,5 +179,13 @@ class TransactionService
         $this->em->flush();
 
         $this->invalidateAnalyticsCache($family, $date);
+    }
+
+    /**
+     * Matches the decimal(15, 2) column, so the entity holds the same value as the database.
+     */
+    private static function normalizeAmount(mixed $amount): string
+    {
+        return number_format(abs((float) $amount), 2, '.', '');
     }
 }

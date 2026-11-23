@@ -67,7 +67,7 @@ class TransactionServiceTest extends TestCase
         );
 
         self::assertSame(TransactionType::Expense, $transaction->getType());
-        self::assertSame('50', $transaction->getAmount());
+        self::assertSame('50.00', $transaction->getAmount());
         self::assertSame('Groceries', $transaction->getDescription());
         self::assertSame($this->account, $transaction->getSourceAccount());
     }
@@ -89,7 +89,7 @@ class TransactionServiceTest extends TestCase
             account: $this->account,
         );
 
-        self::assertSame('75.5', $transaction->getAmount());
+        self::assertSame('75.50', $transaction->getAmount());
     }
 
     public function testAddIncomeCreatesTransactionWithCorrectType(): void
@@ -109,7 +109,7 @@ class TransactionServiceTest extends TestCase
         );
 
         self::assertSame(TransactionType::Income, $transaction->getType());
-        self::assertSame('2500', $transaction->getAmount());
+        self::assertSame('2500.00', $transaction->getAmount());
         self::assertSame($this->account, $transaction->getTargetAccount());
     }
 
