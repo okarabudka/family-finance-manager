@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, coding standards and static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, pdo_pgsql, redis, zip
+          coverage: none
+      - run: composer validate --strict
+      - uses: ramsey/composer-install@v3
+      - run: vendor/bin/php-cs-fixer fix --dry-run --diff
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+      - run: bin/console lint:container
+      - run: bin/console lint:twig templates
+      - run: bin/console lint:yaml config translations --parse-tags
+      - run: bin/console lint:translations
+
+  tests:
+    name: Tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: family_finance
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app -d family_finance"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://app:secret@127.0.0.1:5432/family_finance?serverVersion=16&charset=utf8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, pdo_pgsql, redis, zip
+          coverage: pcov
+      - uses: ramsey/composer-install@v3
+      - name: Build assets
+        run: |
+          bin/console importmap:install
+          bin/console tailwind:build
+      - name: Prepare test database
+        run: |
+          bin/console doctrine:database:create --env=test --if-not-exists
+          bin/console doctrine:migrations:migrate --env=test --no-interaction
+          bin/console doctrine:fixtures:load --env=test --no-interaction
+      - name: Run tests with coverage
+        run: bin/phpunit --coverage-text --coverage-clover var/coverage/clover.xml --coverage-html var/coverage/html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: var/coverage/
+
+  smoke:
+    name: Docker stack smoke test (make up)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make up
+      - name: Login page responds
+        run: curl -fsS http://localhost:8080/login | grep -q 'csrf_token'
+      - name: Demo user can log in and open the dashboard
+        run: |
+          token=$(curl -fsS -c jar.txt http://localhost:8080/login | sed -n 's/.*name="login_form\[_csrf_token\]" value="\([^"]*\)".*/\1/p')
+          curl -fsS -b jar.txt -c jar.txt -o /dev/null \
+            --data-urlencode "login_form[email]=demo@example.com" \
+            --data-urlencode "login_form[password]=demo-password" \
+            --data-urlencode "login_form[_csrf_token]=$token" \
+            http://localhost:8080/login
+          curl -fsS -b jar.txt http://localhost:8080/dashboard | grep -q 'data-chart'
+      - name: Bot webhook replay
+        run: make bot-replay TEXT=/balance | grep -q 'HTTP 200'
+      - name: Container logs
+        if: failure()
+        run: docker compose logs
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan full history
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --redact --verbose
