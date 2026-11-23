@@ -1,123 +1,209 @@
 # Family Finance Manager
 
-A self-hosted family finance tracker with a Telegram bot as the main interface and a Symfony web dashboard for
-detailed management.
+[![CI](https://github.com/okarabudka/family-finance-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/okarabudka/family-finance-manager/actions/workflows/ci.yml)
 
-## Context
+A self-hosted finance tracker for one household. Family members record expenses from Telegram in a few seconds
+(`12.50 coffee`), import their bank statements, and plan budgets and savings goals in a web dashboard with charts.
+`make up` starts the whole stack in Docker with a demo family, so there is something to look at right away.
 
-A personal project built between March and April 2026 to track a family's money in one place: record expenses on the
-go from Telegram, import bank statements, plan budgets and savings goals, and follow electricity and water meter
-readings. It is a full Symfony application with a domain layer shared by two interfaces (bot and web), background
-processing via Symfony Messenger, Docker-based development and production setups, and a CI/CD workflow. The project is
-archived here; development continues in a newer project.
+![Dashboard with balances, monthly summary and charts](docs/screenshots/dashboard.png)
 
-## Features
+## Why it exists
 
-- **Telegram bot**: add expenses and income, transfer between accounts, check balances, monthly reports and spending
-  statistics with charts, budgets, meter readings
-- **Quick text input**: type `50 coffee` to record an expense; keyword rules pick the category, inline buttons allow
-  changing the category or deleting the transaction
-- **Multi-step dialogs** with inline keyboards for transactions, transfers, imports and meter readings
-- **Bank statement import**: MT940 (`.sta`) and Sparkasse CSV, processed in the background with SHA-256
-  deduplication; unrecognised transactions go to a `/pending` review queue
-- **Categorisation rules** by counterparty IBAN (exact match) or keywords, evaluated by priority
-- **Web dashboard**: transactions with filtering and pagination, accounts, hierarchical categories, budgets, savings
-  goals, meter history with charts, imports, recommendations, user and family settings
-- **Meter readings**: electricity (kWh) and water (m3) with optional photo and automatic consumption delta
-- **Scheduled reminders** (daily / weekly / monthly) per family via Telegram and/or email
-- **Weekly report** sent to all family members via Telegram
-- **Family accounts**: several members share one family space with checking, savings, cash and credit card accounts
-- **Admin panel** with EasyAdmin CRUD for all entities at `/admin`
+My family wanted one place for our money: card payments, cash, two salaries, savings, and the electricity and water
+meters we have to report every month. Banking apps show one account each, and spreadsheets are not something you open
+at the supermarket checkout. A Telegram chat is: it is always open, works for every family member, and needs no app
+install.
 
-Bot commands: `/start`, `/add`, `/income`, `/transfer`, `/balance`, `/report`, `/stats`, `/import`, `/pending`,
-`/budget`, `/meter`, `/help`.
+So the bot is the main interface for daily input and the web dashboard is for the monthly review. Both use the same
+domain services, which keeps the bot thin and the business rules testable.
+
+## What you get
+
+**A bot for daily input.** `/start` registers a chat and links it to a family. Typing `50 groceries` books an expense
+on the default account and guesses the category from keyword and IBAN rules; inline buttons change the category or
+delete the booking. Guided dialogs cover expenses, income, transfers, meter readings and statement imports. `/balance`,
+`/report`, `/stats` (chart image) and `/budget` answer questions on the go. The bot replies in English, German or
+Russian, depending on the sender's Telegram language.
+
+**Bank statement import.** MT940 (`.sta`) and Sparkasse CSV files are parsed in a Messenger worker. Each row gets a
+SHA-256 fingerprint, so importing the same statement twice adds nothing. Rows that match a category rule are booked
+directly, the rest wait in a review queue (`/pending` in the bot, *Imports* on the web).
+
+**A dashboard for the monthly review.** Account balances, income and expenses of the month, spending by category, a
+six-month trend, budget usage and recommendations (unusual increases, exceeded budgets, expenses above income).
+Transactions can be filtered and edited; accounts, hierarchical categories, budgets, savings goals and meter readings
+with consumption charts each have their own page. The UI is available in English, German and Russian.
+
+**Reminders and reports.** Reminder templates (daily, weekly or monthly) go out via Telegram and/or e-mail, for
+example "submit the electricity reading on the 1st". A weekly report is sent to every family member.
+
+**An admin panel** at `/admin` (EasyAdmin) for users, families, reminder templates and all other entities.
+
+**Quality checks on every push.** Unit, integration and functional tests against PostgreSQL, PHPStan at level max
+with the Symfony, Doctrine and PHPUnit extensions (tests included), PHP CS Fixer, a smoke test of the Docker stack and
+a gitleaks scan of the full history.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Transactions](docs/screenshots/transactions.png) | ![Budgets](docs/screenshots/budgets.png) |
+| Transactions with filters | Budgets per category and month |
+| ![Meter readings](docs/screenshots/meters.png) | ![Bank import](docs/screenshots/import.png) |
+| Meter readings with consumption charts | Imported bank statements |
+| ![Admin panel](docs/screenshots/admin.png) | |
+| EasyAdmin panel | |
 
 ## Tech stack
 
-- PHP 8.3, Symfony 7.4, Doctrine ORM
-- PostgreSQL 16, Redis 7 (cache, sessions, Messenger transport)
-- Symfony Messenger with a dedicated worker container
-- EasyAdmin 5, Twig, Tailwind CSS, Chart.js, Webpack Encore
-- Telegram Bot API (webhook), Quickchart.io for chart images in Telegram, League CSV
-- Docker Compose (app, nginx, db, redis, worker), Nginx 1.25
-- PHPUnit 12, PHPStan level 6 with Symfony and Doctrine extensions
-- GitHub Actions: PHPStan + PHPUnit, then Docker image build and SSH deploy
+- PHP 8.5, Symfony 8.1, Doctrine ORM 3, EasyAdmin 5
+- PostgreSQL 16, Redis 7 (cache, dialog state, Messenger transport), Symfony Messenger worker
+- Twig, Tailwind CSS 4 and Chart.js through AssetMapper: no Node build, no CDN
+- Telegram Bot API via webhook, Quickchart.io for chart images in the bot, League CSV
+- Docker Compose (PHP-FPM, nginx, PostgreSQL, Redis, worker, Mailpit)
+- PHPUnit 13, PHPStan (level max), PHP CS Fixer, GitHub Actions
 
 ## Architecture
 
-- `src/Domain/`: business logic without HTTP or Telegram concerns (Account, Analytics, Category, Import, Meter,
-  Suggestion, Transaction)
-- `src/Telegram/`: update dispatcher, command registry and handlers, conversation manager with multi-step dialog
-  implementations, sender and notifier
-- `src/Controller/`: `Web/` dashboard, `Admin/` EasyAdmin CRUD, `Telegram/` webhook entry point
-- `src/Message/` + `src/MessageHandler/`: async jobs for imports, notifications, reminders and report generation
-- `src/Command/`: console commands for creating users, setting the webhook, sending reminders and the weekly report
-- Telegram webhook requests are validated against a shared secret header; wrong or missing secrets get HTTP 403
+```mermaid
+flowchart LR
+    TG["Telegram"] -- "webhook + secret header" --> APP
+    BR["Browser"] --> APP
+    subgraph APP["Symfony app"]
+        BOT["Telegram layer<br/>dispatcher · commands · dialogs"] --> DOM
+        WEB["Web controllers · EasyAdmin"] --> DOM
+        DOM["Domain services<br/>transactions · analytics · rules · import · meters"]
+    end
+    DOM --> PG[("PostgreSQL")]
+    DOM <--> RD[("Redis")]
+    RD --> WK["Messenger worker<br/>statement import"]
+```
 
-Details on request flows, entities and services: [ARCHITECTURE.md](ARCHITECTURE.md). The original planning documents
-are in [docs/plan](docs/plan).
+- `src/Domain/` — business logic without HTTP or Telegram code.
+- `src/Telegram/` — update dispatcher, command handlers and the conversation state machine (state in Redis).
+- `src/Controller/` — web pages, EasyAdmin CRUD and the webhook entry point.
+- `src/Message*/`, `src/Command/` — background jobs and console commands for reminders and reports.
+
+Request flows, the data model and design decisions are described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Getting started
 
-Requirements: Docker Engine 24+ and Docker Compose v2. The bot needs a token from Telegram's BotFather and a public
-HTTPS URL for the webhook (for local development, a tunnel such as ngrok).
+You need Docker with Docker Compose and make. PHP, Composer and Node are not required on your machine.
 
 ```bash
 git clone https://github.com/okarabudka/family-finance-manager.git
 cd family-finance-manager
-
-cp .env .env.local
-# set at least TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET
-
-docker compose up -d
-docker compose exec app composer install
-docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
-docker compose exec app php bin/console doctrine:fixtures:load --no-interaction   # optional sample data
-
-docker compose exec app php bin/console app:user:create admin@example.com "Admin" your_password --admin
-docker compose exec app php bin/console app:telegram:set-webhook
+make up
 ```
 
-Web interface: http://localhost:8080. Send `/start` to the bot to register and create a family with two default
-accounts.
+`make up` builds the PHP 8.5 image, starts all containers and waits for their healthchecks, installs Composer
+dependencies, runs the migrations, builds the Tailwind CSS and loads the demo data into an empty database. Then open:
 
-Main environment variables (placeholders only):
+| What        | Address                                  |
+|-------------|------------------------------------------|
+| Web app     | http://localhost:8080                    |
+| Admin panel | http://localhost:8080/admin              |
+| Mailpit     | http://localhost:8025 (reminder e-mails) |
+
+Demo login (local demo only): `demo@example.com` / `demo-password`. The demo family has four accounts, six months of
+transactions, budgets, savings goals, meter readings and a bank import with rows waiting for review. All names, IBANs
+and amounts are made up.
+
+If a port is taken, start with `make up APP_PORT=8081 MAILPIT_PORT=8026`.
+
+### Try the bot without Telegram
+
+With an empty `TELEGRAM_BOT_TOKEN` (the default) the bot works offline: the webhook accepts updates as usual and
+replies are written to the log instead of being sent. `make bot-replay` posts a recorded Telegram update
+([`tests/Fixtures/telegram/message.json`](tests/Fixtures/telegram/message.json)) from the demo user's chat and prints
+the bot's answer:
+
+```bash
+make bot-replay TEXT=/balance
+make bot-replay TEXT="12.50 coffee"    # books an expense, visible under Transactions
+make bot-replay TEXT=/help
+```
+
+The same request with curl:
+
+```bash
+sed 's|__TEXT__|/report|' tests/Fixtures/telegram/message.json | curl -X POST http://localhost:8080/telegram/webhook \
+  -H 'Content-Type: application/json' -H 'X-Telegram-Bot-Api-Secret-Token: dev-webhook-secret' --data-binary @-
+docker compose logs app | grep 'Telegram reply'
+```
+
+### Connect a real bot
+
+Create a bot with [@BotFather](https://t.me/BotFather), then put the values into `.env.local` (git-ignored):
 
 ```dotenv
-APP_SECRET=generate_with_openssl_rand_hex_32
-DATABASE_URL=postgresql://app:your_db_password@db:5432/family_finance?serverVersion=16&charset=utf8
-REDIS_URL=redis://redis:6379
-MESSENGER_TRANSPORT_DSN=redis://redis:6379/messages
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_WEBHOOK_URL=https://yourdomain.example/telegram/webhook
-TELEGRAM_WEBHOOK_SECRET=your_random_secret
-STORAGE_LOCAL_PATH=%kernel.project_dir%/var/uploads
-MAILER_DSN=null://null
+TELEGRAM_BOT_TOKEN=<token from BotFather>
+TELEGRAM_WEBHOOK_URL=https://<public host>/telegram/webhook
+TELEGRAM_WEBHOOK_SECRET=<long random string>
 ```
 
-Useful Make targets: `make up`, `make down`, `make shell`, `make migrate`, `make fixtures`, `make set-webhook`,
-`make assets`, `make assets-watch`, `make cache-clear`.
+Telegram needs a public HTTPS URL; for local development a tunnel such as ngrok works. Register the webhook with
+`make set-webhook` and send `/start` to the bot.
 
-Production uses `docker-compose.prod.yml` with the image built from `docker/php/Dockerfile.prod`, hourly cron for
-`app:reminders:send`, a weekly cron for `app:report:weekly` and a daily database backup via `scripts/backup.sh`.
+### Day-to-day commands
+
+| Command              | What it does                                                    |
+|----------------------|-----------------------------------------------------------------|
+| `make up`            | Build and start the stack, migrate, seed an empty database      |
+| `make down`          | Stop the containers (volumes are kept)                          |
+| `make fixtures`      | Reset the database to the demo data                             |
+| `make test`          | Recreate the test database and run all tests                    |
+| `make coverage`      | Tests with a coverage report in `var/coverage`                  |
+| `make stan`          | PHPStan, level max                                              |
+| `make cs` / `cs-fix` | Check / fix the coding standard                                 |
+| `make qa`            | `cs`, `stan` and `test`, like CI                                |
+| `make bot-replay`    | Send a recorded Telegram update to the local webhook            |
+| `make shell`         | Shell in the PHP container                                      |
+| `make help`          | List all targets                                                |
+
+### Production
+
+`docker-compose.prod.yml` runs the `prod` and `nginx` targets of `docker/php/Dockerfile`: Composer without dev
+packages and an authoritative class map, Tailwind and the asset map compiled at build time and served by nginx with
+immutable cache headers, healthchecks for every service. Secrets come from a git-ignored `.env.prod`:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --wait
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec app php bin/console doctrine:migrations:migrate
+```
+
+Schedule `app:reminders:send` hourly, `app:report:weekly` weekly and `scripts/backup.sh` daily with cron on the host.
+`.github/workflows/deploy.yml` is a manually triggered example that pushes both images to GHCR and rolls them out over
+SSH.
 
 ## Testing
 
-Unit tests cover the domain services (accounts, transactions, quick input parser, categorisation rules, MT940 and
-Sparkasse CSV parsers, import processing, suggestions, meters) and the reminder template entity.
-
 ```bash
-make test       # docker compose exec app php bin/phpunit
-make analyse    # PHPStan, level 6
-make install-hooks   # optional git pre-commit hook: PHPStan + php -l on staged files
+make test
 ```
 
-Manual end-to-end scenarios to run after a deploy are described in [TESTING.md](TESTING.md).
+| Suite         | What it covers                                                                                                   |
+|---------------|------------------------------------------------------------------------------------------------------------------|
+| `unit`        | Domain services: balances, transactions, quick input parser, category rules, MT940 and Sparkasse parsers, import processing, recommendations, meters, reminder schedule |
+| `integration` | Repository queries (sums per account, category and period) against PostgreSQL                                    |
+| `functional`  | `WebTestCase`: login, every page of the demo user, creating a transaction, the Telegram webhook (403 on a wrong or missing secret, 200 for a recorded update, quick input booking an expense) |
+
+Functional and integration tests run against a PostgreSQL test database with the demo data; DAMADoctrineTestBundle
+wraps every test in a transaction that is rolled back. The Telegram API is never called in tests.
+
+CI (`.github/workflows/ci.yml`) runs on every push and pull request:
+
+| Job       | What it checks                                                                                 |
+|-----------|------------------------------------------------------------------------------------------------|
+| `quality` | composer validate, PHP CS Fixer, PHPStan (max), container/Twig/YAML/translation lint            |
+| `tests`   | All suites with a PostgreSQL service; the coverage report is uploaded as an artifact            |
+| `smoke`   | `make up`, then login page, demo login, dashboard with chart data and a bot replay with curl    |
+| `secrets` | gitleaks over the full history                                                                 |
 
 ## Status
 
-Archived. Developed from March to April 2026; the work continues in a newer project and this repository is no longer
-maintained.
+Maintained.
 
 ## License
 

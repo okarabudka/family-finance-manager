@@ -1,397 +1,85 @@
-# Architecture — Family Finance Manager
+# Architecture
 
-## Overview
+Family Finance Manager is one Symfony application with two interfaces: a Telegram bot for daily input and a web
+dashboard for planning and review. Both call the same domain services and share one PostgreSQL database.
 
-Family Finance Manager is a self-hosted Symfony 7.4 application with two primary interfaces:
+```mermaid
+flowchart LR
+    TG["Telegram"] -- "POST /telegram/webhook<br/>secret header" --> NG
+    BR["Browser"] --> NG["nginx"]
+    NG --> APP
 
-- **Telegram bot** — the main daily-use interface (add transactions, check balance, submit meter readings, receive reminders)
-- **Web dashboard** — full management interface (analytics, imports, admin panel)
+    subgraph APP["Symfony app (PHP-FPM)"]
+        WH["WebhookController"] --> UD["UpdateDispatcher"]
+        UD --> CMD["CommandRegistry<br/>command handlers"]
+        UD --> CONV["ConversationManager<br/>multi-step dialogs"]
+        UD --> QI["MessageHandler<br/>quick input: 50 groceries"]
+        WEB["Web controllers + forms"]
+        ADM["EasyAdmin /admin"]
+        CMD & CONV & QI & WEB --> DOM
+        DOM["Domain services<br/>Transaction · Account · Analytics<br/>Category rules · Import · Meter · Suggestion"]
+    end
 
-Both interfaces share the same domain services, Doctrine ORM entities, and PostgreSQL database. Long-running work (bank imports, reminder delivery, report generation) is handled asynchronously by a Symfony Messenger worker.
+    DOM --> PG[("PostgreSQL")]
+    DOM <--> RD[("Redis<br/>cache · dialog state")]
+    CONV -- "ProcessImportMessage" --> RD
+    RD --> WK["Messenger worker"] --> DOM
+    CRON["cron: app:reminders:send,<br/>app:report:weekly"] --> DOM
+    DOM -- "sendMessage / sendPhoto" --> TG
+    DOM -- "chart PNG" --> QC["Quickchart.io"]
+```
 
----
+## Layers
 
-## Technology Stack
-
-| Layer | Technology |
+| Directory | Responsibility |
 |---|---|
-| Language | PHP 8.3 |
-| Framework | Symfony 7.4 |
-| Database | PostgreSQL 16 (Doctrine ORM 3.6) |
-| Cache / Sessions / Queue | Redis 7 |
-| Message queue transport | Symfony Messenger via Redis |
-| Admin panel | EasyAdmin 5.0 |
-| Frontend | Tailwind CSS (CDN), Chart.js 4 (CDN), Webpack Encore (custom JS only) |
-| Telegram charts | Quickchart.io (PNG generation) |
-| CSV parsing | League/CSV 9 |
-| Containerization | Docker + Docker Compose |
-| Web server | Nginx 1.25 → PHP-FPM |
-
----
-
-## Repository Layout
-
-```
-src/
-├── Command/            # CLI commands (4)
-├── Controller/
-│   ├── Admin/          # EasyAdmin CRUD controllers (9) + dashboard
-│   ├── Telegram/       # Webhook entry point (1)
-│   └── Web/            # Web dashboard controllers (11)
-├── DataFixtures/       # Dev seed data
-├── Domain/             # Business logic, no HTTP or Telegram concerns
-│   ├── Analytics/      # Charts, monthly reports, spending breakdown
-│   ├── Category/       # Auto-categorization rule engine
-│   ├── Import/         # Bank statement parsing (MT940, Sparkasse CSV)
-│   ├── Meter/          # Meter reading service, consumption calculation
-│   ├── Suggestion/     # Financial recommendations engine
-│   └── Transaction/    # Quick input parser, CRUD, balance updates
-├── Entity/             # Doctrine ORM entities + enums
-├── Form/               # Symfony form types (web only)
-├── Message/            # Async message DTOs (4)
-├── MessageHandler/     # Async message handlers (4)
-├── Repository/         # Doctrine query repositories (12)
-├── Security/           # Auth providers
-└── Telegram/           # Everything bot-specific
-    ├── Conversation/   # Multi-step dialog implementations (6)
-    ├── Handler/        # Command handlers (12) + callback handlers (2)
-    ├── CommandHandlerInterface.php
-    ├── CommandRegistry.php
-    ├── ConversationInterface.php
-    ├── ConversationManager.php
-    ├── ConversationRegistry.php
-    ├── TelegramFileDownloader.php
-    ├── TelegramNotifier.php
-    ├── TelegramSender.php
-    └── UpdateDispatcher.php
-
-templates/              # Twig templates (Tailwind CSS)
-migrations/             # Doctrine migrations (3)
-config/
-├── packages/           # Symfony bundle configs (16 yaml files)
-└── services.yaml       # DI wiring, CommandRegistry, ConversationRegistry
-```
-
----
-
-## Entities and Relationships
-
-```
-Family
- ├── members        → User[]          (users.family_id → families.id)
- ├── accounts       → Account[]       (accounts.family_id → families.id)
- ├── categories     → Category[]      (categories.family_id → families.id)
- ├── budgets        → Budget[]        (budgets.family_id → families.id)
- ├── savingsGoals   → SavingsGoal[]   (savings_goals.family_id → families.id)
- ├── transactions   → Transaction[]   (transactions.family_id → families.id)
- ├── meterReadings  → MeterReading[]  (meter_readings.family_id → families.id)
- ├── reminders      → ReminderTemplate[] (reminder_templates.family_id → families.id, nullable)
- └── recommendations→ Recommendation[]
-
-User
- ├── family         → Family          (nullable, SET NULL on delete)
- └── telegramChatId bigint (nullable) — links bot user to web user
-
-Account
- ├── family         → Family
- └── type           → AccountType enum (checking, savings, cash, credit_card)
-
-Transaction
- ├── family         → Family
- ├── sourceAccount  → Account (nullable)
- ├── targetAccount  → Account (nullable)
- ├── category       → Category (nullable)
- ├── createdBy      → User
- ├── importOrigin   → ImportTransaction (nullable, unique)
- └── type           → TransactionType enum
-
-Category
- ├── family         → Family
- ├── parent         → Category (nullable, self-referencing)
- ├── children       → Category[]
- └── type           → CategoryType enum (expense, income)
-
-CategoryRule
- ├── family         → Family
- ├── category       → Category
- ├── keywords       → JSON array
- └── counterpartyIban string (nullable)
-
-ImportFile
- ├── account        → Account
- ├── uploadedBy     → User
- └── status         → ImportStatus enum (pending, processing, done, failed)
-
-ImportTransaction
- ├── importFile     → ImportFile
- └── status         → ImportTransactionStatus enum (pending, categorized, skipped)
-
-Budget
- ├── family         → Family
- ├── category       → Category
- └── UNIQUE(family_id, category_id, year, month)
-
-SavingsGoal
- ├── family         → Family
- ├── account        → Account
- └── status         → SavingsGoalStatus enum (active, completed, archived)
-
-MeterReading
- ├── family         → Family
- ├── createdBy      → User
- └── type           → MeterType enum (electricity, water)
-
-ReminderTemplate
- ├── family         → Family (nullable — null means all families)
- ├── type           → ReminderType enum
- └── frequency      → ReminderFrequency enum (daily, weekly, monthly)
-```
-
-### Enums
-
-| Enum | Values |
-|---|---|
-| `AccountType` | `checking`, `savings`, `cash`, `credit_card` |
-| `CategoryType` | `expense`, `income` |
-| `TransactionType` | `expense`, `income`, `transfer`, `refund`, `adjustment` |
-| `ImportStatus` | `pending`, `processing`, `done`, `failed` |
-| `ImportTransactionStatus` | `pending`, `categorized`, `skipped` |
-| `SavingsGoalStatus` | `active`, `completed`, `archived` |
-| `MeterType` | `electricity`, `water` |
-| `ReminderType` | `meter_electricity`, `meter_water`, `budget_check`, `savings_check`, `custom` |
-| `ReminderFrequency` | `daily`, `weekly`, `monthly` |
-
----
-
-## Telegram Bot Architecture
-
-### Incoming request flow
-
-```
-POST /telegram/webhook
-        │
-        ▼
-WebhookController
-  • Validates X-Telegram-Bot-Api-Secret-Token header → 403 if wrong
-  • Deserializes JSON body
-        │
-        ▼
-UpdateDispatcher
-  • Checks ConversationManager → active dialog for this chatId?
-  │
-  ├─ YES → ConversationRegistry.get(conversationClass).handle(chatId, update, state)
-  │
-  └─ NO  → Detect update type
-              ├─ /command text  → CommandRegistry.execute(command, update)
-              ├─ callback_query → TransactionCallbackHandler or PendingImportHandler
-              └─ plain text     → MessageHandler (quick input parser)
-```
-
-### Conversation state machine
-
-Multi-step dialogs (add expense, import, meter reading, etc.) are implemented as `ConversationInterface` classes. State is stored in Redis with a 30-minute TTL.
-
-```
-ConversationManager (Redis-backed)
-  • start(chatId, ConversationClass)     → writes {class, step: 0, data: {}} to Redis
-  • getState(chatId)                     → reads current state
-  • updateState(chatId, state)           → writes updated step/data
-  • end(chatId)                          → deletes key from Redis
-```
-
-Each `ConversationInterface::handle(chatId, update, state)` reads `state['step']` and routes to the appropriate step method. Steps advance by calling `updateState` with `step + 1`.
-
-**Registered conversations:**
-
-| Class | Trigger | Steps |
-|---|---|---|
-| `RegisterConversation` | `/start` | name → family setup → default accounts |
-| `AddExpenseConversation` | `/add` | amount → category (inline) → account → confirm |
-| `AddIncomeConversation` | `/income` | amount → category → account → confirm |
-| `AddTransferConversation` | `/transfer` | source account → target account → amount → confirm |
-| `ImportConversation` | `/import` | account selection → file upload |
-| `AddMeterConversation` | `/meter` | type selection → value → optional photo |
-
-### Command handlers
-
-Each `CommandHandlerInterface` handles one `/command`. Registered in `config/services.yaml` under `CommandRegistry`:
-
-`start`, `balance`, `report`, `add`, `import`, `stats`, `income`, `transfer`, `budget`, `pending`, `meter`, `help`
-
-### Non-command handlers
-
-- **`MessageHandler`** — catches plain text messages outside an active conversation. Delegates to `QuickInputParser` (parses `"50 coffee"` → `{amount: 50, description: "coffee"}`), creates the transaction, and replies with inline confirmation buttons.
-- **`TransactionCallbackHandler`** — handles `tx:*` callback queries (edit/delete transaction buttons).
-- **`PendingImportHandler`** — handles `pending:*` callback queries (categorize import transactions).
-
----
-
-## Asynchronous Processing
-
-All async work goes through **Symfony Messenger** with a Redis transport. A dedicated `worker` container consumes the `async` queue.
-
-```
-App container                         Worker container
-     │                                      │
-     │  dispatch(Message)                   │
-     │ ─────────────────────────► Redis ───►│
-     │                            queue     │  handler.invoke(message)
-     │                                      │  → DB write, Telegram API, email
-```
-
-### Messages and handlers
-
-| Message | Handler | Triggered by |
-|---|---|---|
-| `ProcessImportMessage` | `ProcessImportMessageHandler` | File uploaded via `/import` |
-| `SendNotificationMessage` | `SendNotificationMessageHandler` | Import complete, budget alerts |
-| `SendReminderMessage` | `SendReminderMessageHandler` | `app:reminders:send` cron command |
-| `GenerateReportMessage` | `GenerateReportMessageHandler` | `app:report:weekly` command |
-
-The worker restarts every 3600 seconds (`--time-limit=3600`) to prevent memory leaks.
-
-Failed messages land in a `failed` transport and can be inspected and retried:
-
-```bash
-php bin/console messenger:failed:show
-php bin/console messenger:failed:retry
-```
-
----
-
-## Reminder System
-
-```
-cron (every hour)
-     │
-     ▼
-app:reminders:send command
-     │  loads all active ReminderTemplate records
-     │  calls template.isDue(now) on each
-     │    isDue() checks:
-     │      • current hour == sendHour
-     │      • not already sent in current period (lastSentAt guard)
-     │      • correct dayOfWeek / dayOfMonth for weekly/monthly
-     │
-     ▼  for each due template:
-dispatch(SendReminderMessage)
-     │
-     ▼ (async, in worker)
-SendReminderMessageHandler
-     │  resolves recipients (family members, or all users if family=null)
-     │  for each user:
-     │    • sendViaTelegram → TelegramSender.sendMessage(chatId, text)
-     │    • sendViaEmail    → Mailer.send(Email to user.email)
-     │  updates template.lastSentAt = now
-     ▼
-```
-
----
-
-## Web Request Flow
-
-```
-HTTP request
-     │
-     ▼
-Nginx (port 8080 → 80)
-     │
-     ▼
-PHP-FPM (Symfony kernel)
-     │
-     ├─ /admin/*   → EasyAdmin 5 (AbstractCrudController subclasses)
-     ├─ /telegram/webhook → WebhookController → UpdateDispatcher
-     └─ /*         → Web controllers (AbstractController subclasses)
-                         │
-                         ├─ Doctrine ORM (PostgreSQL)
-                         ├─ Domain services (Analytics, Meter, Transaction, …)
-                         └─ Twig templates (Tailwind CSS, Chart.js)
-```
-
-### Authentication
-
-Web authentication uses Symfony Security with a form login (`/login`) and a `UserRepository`-backed user provider. Telegram users are identified by `telegramChatId` stored on the `User` entity — no separate auth required for the bot.
-
-All web dashboard routes are protected with `#[IsGranted('ROLE_USER')]`. The admin panel at `/admin` uses a separate `ROLE_ADMIN` check configured in `security.yaml`.
-
----
-
-## File Storage
-
-Uploaded files (bank statements, meter photos) are stored in `STORAGE_LOCAL_PATH` (default: `var/uploads/`) in subdirectories:
-
-```
-var/uploads/
-├── imports/        # Bank statement files (MT940, CSV)
-└── meters/         # Meter photos downloaded from Telegram
-```
-
-Files are saved by `TelegramFileDownloader` with randomized hex filenames. Meter photos are served through `MeterController::photo()` which enforces family-scoped access control before streaming the file — they are never directly exposed by Nginx.
-
----
-
-## Domain Services
-
-| Service | Responsibilities |
-|---|---|
-| `TransactionService` | CRUD, balance updates, quick input |
-| `AccountService` | Balance calculation, default account lookup |
-| `CategoryRuleService` | Auto-categorize by IBAN or keyword |
-| `ImportProcessor` | Parse file, deduplicate, apply rules, notify |
-| `ImportParserFactory` | Detect format, delegate to MT940 or CSV parser |
-| `QuickInputParser` | Parse `"50 coffee"` → amount + description |
-| `AnalyticsService` | Monthly reports, trends, category breakdown |
-| `ChartGenerator` | Generate PNG charts via Quickchart.io |
-| `SuggestionService` | Generate financial recommendations |
-| `MeterService` | Save readings, calculate consumption deltas, chart data |
-
----
-
-## Database Migrations
-
-| File | Description |
-|---|---|
-| `Version20260101000000` | Initial schema — all base tables (families, users, accounts, transactions, categories, budgets, savings_goals, imports, recommendations) |
-| `Version20260426000001` | Add `meter_readings` table |
-| `Version20260426000002` | Add `reminder_templates` table |
-
----
-
-## Configuration Wiring (services.yaml)
-
-Services requiring explicit constructor arguments beyond autowiring:
-
-| Service | Explicit args |
-|---|---|
-| `TelegramSender` | `$botToken` |
-| `TelegramFileDownloader` | `$botToken`, `$uploadDir` |
-| `ChartGenerator` | `$storagePath` |
-| `TelegramSetWebhookCommand` | `$botToken`, `$webhookUrl`, `$webhookSecret` |
-| `WebhookController` | `$webhookSecret` |
-| `ConversationManager` | `$cache`, `$cachePool` (Redis pool, lazy-loaded) |
-| `ImportParserFactory` | `$parsers` (tagged iterator: `app.import_parser`) |
-| `SendReminderMessageHandler` | `$mailerFrom` |
-| `CommandRegistry` | `$handlers` (keyed array: command → handler service) |
-| `ConversationRegistry` | `$conversations` (keyed by FQCN) |
-
----
-
-## Key Design Decisions
-
-**Conversation state in Redis (not DB)**
-Dialog steps are ephemeral by design. A 30-minute TTL means abandoned dialogs self-clean. The tradeoff — state lost on Redis restart — is acceptable for a household tool.
-
-**Family isolation**
-Every query involving user data is scoped by `family_id`. There is no global data model except `ReminderTemplate` (where `family = null` means "all families"). This prevents cross-family data leakage without a dedicated multi-tenancy layer.
-
-**Poll-based reminders (cron) vs. Symfony Scheduler**
-The project deliberately avoids adding a scheduler process. A single hourly cron job running `app:reminders:send` is sufficient and easier to operate. The `isDue()` logic on `ReminderTemplate` is self-contained and testable without a scheduler framework.
-
-**SHA-256 deduplication for imports**
-Bank statement re-uploads are common. Each `ImportTransaction` gets a hash of its key fields on first import. Subsequent imports of the same transaction silently skip it rather than erroring or creating a duplicate.
-
-**Quickchart.io for Telegram charts**
-Telegram bots can send images but not run JavaScript. Chart.js requires a browser. Quickchart.io renders Chart.js server-side and returns a PNG. The web dashboard uses Chart.js directly (it already runs in a browser).
-
-**EasyAdmin for the admin panel**
-All entity management (including `ReminderTemplate` configuration) is handled by EasyAdmin 5 CRUD controllers. This avoids building a custom admin UI for low-frequency operations.
+| `src/Domain/` | Business logic without HTTP or Telegram code: balances, monthly reports and trends, keyword/IBAN category rules, statement parsing and deduplication, meter consumption, recommendations |
+| `src/Telegram/` | Update dispatcher, command registry and handlers, conversation state machine, sender (logs replies instead of calling the API when no bot token is set) |
+| `src/Controller/` | `Web/` dashboard pages, `Admin/` EasyAdmin CRUD, `Telegram/` webhook entry point |
+| `src/Message/`, `src/MessageHandler/` | Messenger messages: bank imports run in the worker; reminders, notifications and report generation |
+| `src/Command/` | Console commands: create user, set webhook, send due reminders, weekly report |
+| `src/Entity/`, `src/Repository/` | Doctrine entities with UUID keys, backed enums, family-scoped queries |
+
+## Data model
+
+Everything belongs to a `Family`. Members (`User`) share its accounts, categories, budgets, savings goals,
+transactions and meter readings, and every repository query is scoped by family. A user becomes a bot user when
+`telegramChatId` is set during `/start` registration.
+
+- `Transaction` has a type (expense, income, transfer, refund, adjustment), a source and/or target `Account` and an
+  optional `Category`. Account balances are the initial balance plus inflows minus outflows and are cached in Redis
+  until a transaction touches the account.
+- `ImportFile` → `ImportTransaction`: parsed statement rows. Each row carries a SHA-256 hash of its key fields, so
+  importing the same statement twice skips known rows. Rows matched by a `CategoryRule` are imported directly, the
+  rest wait in the `/pending` queue.
+- `Budget` is planned spending per category and month, `SavingsGoal` a target amount on a savings account,
+  `MeterReading` an electricity (kWh) or water (m³) reading; consumption is the delta to the previous reading.
+- `ReminderTemplate` defines daily, weekly or monthly reminders sent via Telegram and/or e-mail; a template without a
+  family applies to all families.
+
+## Request flows
+
+**Bot update.** Telegram calls the webhook with the `X-Telegram-Bot-Api-Secret-Token` header; anything else gets 403.
+`UpdateDispatcher` sets the reply language from the sender's Telegram language and routes the update: callback
+buttons to their handler, text into an active conversation (state in Redis, 30-minute TTL, `/cancel` ends it),
+slash commands to the `CommandRegistry`, and free text to quick input, which parses an amount and description,
+guesses the category from the family's rules and books an expense on the default account.
+
+**Bank import.** `/import` starts a conversation that downloads the file, detects MT940 or Sparkasse CSV and
+dispatches `ProcessImportMessage`. The worker parses, deduplicates and categorises the rows and reports the result
+back to the chat.
+
+**Web.** Form login with CSRF protection, `ROLE_USER` for the dashboard and `ROLE_ADMIN` for `/admin`. Assets are
+served by AssetMapper: Tailwind CSS is compiled by the Tailwind standalone binary and Chart.js comes from the
+importmap, so there is no Node build and no CDN at runtime. Charts are declared as `data-chart` attributes and
+rendered by `assets/app.js`. The UI language (English, German, Russian) is stored in the session.
+
+## Design decisions
+
+- **Dialog state in Redis, not in the database.** Steps are short-lived; an abandoned dialog expires on its own.
+  Losing state on a Redis restart is acceptable for a household tool.
+- **Cron instead of a scheduler process.** One hourly `app:reminders:send` run is enough; `ReminderTemplate::isDue()`
+  holds the timing rules and is unit tested.
+- **Quickchart.io for bot charts.** Telegram can only show images, so the bot renders Chart.js configurations to PNG
+  through Quickchart (self-hostable); the web dashboard renders the same kind of chart in the browser.
+- **EasyAdmin for rare operations** such as reminder templates and families, instead of custom admin pages.
