@@ -1,74 +1,15 @@
-#!/usr/bin/env bash
-# Pre-commit hook: runs code quality checks before each commit.
-# Install: make install-hooks
-set -euo pipefail
+#!/bin/sh
+# Pre-commit hook: coding standards and static analysis inside the app container.
+# Install with: make install-hooks
+set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-echo -e "${YELLOW}Running pre-commit checks...${NC}"
-
-# Detect PHP binary (prefer the one available in the current environment)
-PHP=$(command -v php 2>/dev/null || echo "")
-if [ -z "$PHP" ]; then
-    echo -e "${RED}PHP not found in PATH. Skipping static analysis.${NC}"
+if [ -z "$(git diff --cached --name-only --diff-filter=ACMR -- '*.php')" ]; then
     exit 0
 fi
 
-# Detect changed PHP files (staged only)
-STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.php$' || true)
-
-if [ -z "$STAGED_PHP" ]; then
-    echo -e "${GREEN}No PHP files staged — nothing to check.${NC}"
+if [ -z "$(docker compose ps -q --status running app 2>/dev/null)" ]; then
+    echo "pre-commit: app container is not running, skipping checks (start it with 'make up')."
     exit 0
 fi
 
-echo "Staged PHP files:"
-echo "$STAGED_PHP" | sed 's/^/  /'
-
-# ── PHPStan ──────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[1/2] PHPStan static analysis...${NC}"
-
-if [ ! -f "vendor/bin/phpstan" ]; then
-    echo -e "${RED}vendor/bin/phpstan not found. Run: composer install${NC}"
-    exit 1
-fi
-
-# Run PHPStan on the whole src/ tree (type inference requires full context).
-# Pass --no-progress to keep the output clean in the terminal.
-if ! "$PHP" vendor/bin/phpstan analyse --no-progress --memory-limit=256M; then
-    echo ""
-    echo -e "${RED}✖ PHPStan found errors. Commit aborted.${NC}"
-    echo -e "  Fix the errors above, then run: git add . && git commit"
-    exit 1
-fi
-
-echo -e "${GREEN}✔ PHPStan passed.${NC}"
-
-# ── PHP syntax check on staged files ─────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[2/2] PHP syntax check on staged files...${NC}"
-
-SYNTAX_ERRORS=0
-while IFS= read -r file; do
-    if [ -f "$file" ]; then
-        if ! "$PHP" -l "$file" > /dev/null 2>&1; then
-            echo -e "${RED}  Syntax error in: $file${NC}"
-            "$PHP" -l "$file"
-            SYNTAX_ERRORS=$((SYNTAX_ERRORS + 1))
-        fi
-    fi
-done <<< "$STAGED_PHP"
-
-if [ "$SYNTAX_ERRORS" -gt 0 ]; then
-    echo ""
-    echo -e "${RED}✖ $SYNTAX_ERRORS file(s) have syntax errors. Commit aborted.${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✔ Syntax check passed.${NC}"
-echo ""
-echo -e "${GREEN}All checks passed. Proceeding with commit.${NC}"
+make --no-print-directory cs stan
