@@ -41,6 +41,12 @@ class TelegramSender
             $params['reply_markup'] = $replyMarkup;
         }
 
+        if ($this->isOffline()) {
+            $this->logOffline('sendMessage', $params);
+
+            return;
+        }
+
         try {
             $this->httpClient->request(
                 'POST',
@@ -57,6 +63,12 @@ class TelegramSender
 
     public function sendPhoto(int $chatId, string $photoPath, string $caption = ''): void
     {
+        if ($this->isOffline()) {
+            $this->logOffline('sendPhoto', ['chat_id' => $chatId, 'photo' => $photoPath, 'caption' => $caption]);
+
+            return;
+        }
+
         try {
             $resource = fopen($photoPath, 'r');
             if ($resource === false) {
@@ -90,6 +102,10 @@ class TelegramSender
 
     public function answerCallbackQuery(string $callbackQueryId, string $text = ''): void
     {
+        if ($this->isOffline()) {
+            return;
+        }
+
         try {
             $this->httpClient->request(
                 'POST',
@@ -128,6 +144,12 @@ class TelegramSender
             $params['reply_markup'] = $replyMarkup;
         }
 
+        if ($this->isOffline()) {
+            $this->logOffline('editMessageText', $params);
+
+            return;
+        }
+
         try {
             $this->httpClient->request(
                 'POST',
@@ -141,5 +163,23 @@ class TelegramSender
                 'error'     => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Without a bot token (local development, demos) replies are logged instead of sent.
+     */
+    private function isOffline(): bool
+    {
+        return $this->botToken === '';
+    }
+
+    /** @param array<string, mixed> $params */
+    private function logOffline(string $method, array $params): void
+    {
+        $this->logger->info('Telegram reply (offline) {method}: {text}', [
+            'method'       => $method,
+            'text'         => $params['text'] ?? $params['caption'] ?? '',
+            'reply_markup' => $params['reply_markup'] ?? null,
+        ]);
     }
 }
