@@ -12,8 +12,10 @@ use App\Entity\User;
 use App\Repository\MeterReadingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class MeterServiceTest extends TestCase
 {
     private EntityManagerInterface&MockObject $em;

@@ -11,10 +11,12 @@ use App\Entity\Family;
 use App\Repository\TransactionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Cache\CacheInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class AccountServiceTest extends TestCase
 {
     private TransactionRepository&MockObject $txRepo;
