@@ -82,11 +82,13 @@ jobs:
         run: curl -fsS http://localhost:8080/login | grep -q 'csrf_token'
       - name: Demo user can log in and open the dashboard
         run: |
-          token=$(curl -fsS -c jar.txt http://localhost:8080/login | sed -n 's/.*name="login_form\[_csrf_token\]" value="\([^"]*\)".*/\1/p')
+          # Login uses Symfony's stateless CSRF: a fixed token name checked against the Origin header.
+          curl -fsS -c jar.txt -o /dev/null http://localhost:8080/login
           curl -fsS -b jar.txt -c jar.txt -o /dev/null \
+            -H 'Origin: http://localhost:8080' \
             --data-urlencode "login_form[email]=demo@example.com" \
             --data-urlencode "login_form[password]=demo-password" \
-            --data-urlencode "login_form[_csrf_token]=$token" \
+            --data-urlencode "login_form[_csrf_token]=csrf-token" \
             http://localhost:8080/login
           curl -fsS -b jar.txt http://localhost:8080/dashboard | grep -q 'data-chart'
       - name: Bot webhook replay
