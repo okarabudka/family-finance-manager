@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ title }} — Family Finance Manager{% endblock %}
+{% block title %}{{ title|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex items-center gap-4">
-    <a href="{{ path('account_list') }}" class="text-indigo-600 hover:underline text-sm">&larr; Back to accounts</a>
-    <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+    <a href="{{ path('account_list') }}" class="text-indigo-600 hover:underline text-sm">&larr; {{ 'account.back'|trans }}</a>
+    <h1 class="text-2xl font-bold text-gray-900">{{ title|trans }}</h1>
 </div>
 
 <div class="bg-white rounded-lg shadow p-6 max-w-xl">
@@ -62,11 +62,11 @@
     <div class="flex gap-3 pt-2">
         <button type="submit"
                 class="px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
-            Save
+            {{ 'common.save'|trans }}
         </button>
         <a href="{{ path('account_list') }}"
            class="px-6 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200">
-            Cancel
+            {{ 'common.cancel'|trans }}
         </a>
     </div>
 

@@ -19,6 +19,7 @@ use App\Repository\CategoryRepository;
 use App\Repository\TransactionRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class SuggestionServiceTest extends TestCase
 {
@@ -38,6 +39,7 @@ class SuggestionServiceTest extends TestCase
             $this->analyticsService,
             $this->txRepo,
             $this->categoryRepo,
+            $this->createTranslator(),
         );
 
         $this->family = new Family();
@@ -45,6 +47,22 @@ class SuggestionServiceTest extends TestCase
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    /** Renders "key {param: value, ...}" so tests can check which message and values were used. */
+    private function createTranslator(): TranslatorInterface
+    {
+        return new class implements TranslatorInterface {
+            public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return $id.' '.json_encode($parameters, \JSON_UNESCAPED_UNICODE);
+            }
+
+            public function getLocale(): string
+            {
+                return 'en';
+            }
+        };
+    }
 
     private function makeCategory(string $name = 'Test Category'): Category
     {
@@ -146,6 +164,9 @@ class SuggestionServiceTest extends TestCase
         $spike = array_values($spikes)[0];
         self::assertSame(SuggestionPriority::High, $spike->priority);
         self::assertSame($category, $spike->category);
+        self::assertStringStartsWith('suggestion.expense_spike.title', $spike->title);
+        self::assertStringContainsString('"%percent%":"31"', $spike->message);
+        self::assertStringContainsString('"%current%":"131"', $spike->message);
     }
 
     public function testExpenseSpikeRequiresDiffAbove20(): void
@@ -231,6 +252,9 @@ class SuggestionServiceTest extends TestCase
         $s = array_values($exceeded)[0];
         self::assertSame(SuggestionPriority::High, $s->priority);
         self::assertSame($category, $s->category);
+        self::assertStringStartsWith('suggestion.budget_exceeded.title', $s->title);
+        self::assertStringContainsString('"%category%":"Groceries"', $s->message);
+        self::assertStringContainsString('"%currency%":"EUR"', $s->message);
     }
 
     public function testBudgetNotExceededAt100Percent(): void
@@ -319,6 +343,7 @@ class SuggestionServiceTest extends TestCase
         $s = array_values($missing)[0];
         self::assertSame(SuggestionPriority::Medium, $s->priority);
         self::assertSame($category, $s->category);
+        self::assertStringStartsWith('suggestion.missing_expense.title', $s->title);
     }
 
     public function testNoMissingExpenseWhenCategoryHasTransactionThisMonth(): void

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-enum ReminderType: string
+use Symfony\Contracts\Translation\TranslatableInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+enum ReminderType: string implements TranslatableInterface
 {
     case MeterElectricity = 'meter_electricity';
     case MeterWater       = 'meter_water';
@@ -21,5 +24,10 @@ enum ReminderType: string
             self::SavingsCheck     => '🐷 Savings goal check',
             self::Custom           => '📝 Custom',
         };
+    }
+
+    public function trans(TranslatorInterface $translator, ?string $locale = null): string
+    {
+        return $translator->trans('enum.reminder_type.'.$this->value, [], 'messages', $locale);
     }
 }

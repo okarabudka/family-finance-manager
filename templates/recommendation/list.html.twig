@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Recommendations — Family Finance Manager{% endblock %}
+{% block title %}{{ 'recommendation.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Recommendations</h1>
-    <p class="text-sm text-gray-500 mt-1">Personalised financial recommendations for your family.</p>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'recommendation.title'|trans }}</h1>
+    <p class="text-sm text-gray-500 mt-1">{{ 'recommendation.subtitle'|trans }}</p>
 </div>
 
 {% if recommendations is empty %}
     <div class="bg-white rounded-lg shadow p-12 text-center text-gray-400">
-        No active recommendations. Well done!
+        {{ 'recommendation.empty'|trans }}
     </div>
 {% else %}
 <div class="space-y-4">
@@ -32,28 +32,28 @@
                 <div class="flex items-center gap-2 mb-1">
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                                  {{ typeColors[rec.type] ?? 'bg-gray-100 text-gray-500' }}">
-                        {{ rec.type|replace({'_': ' '})|capitalize }}
+                        {{ ('recommendation.type.' ~ rec.type)|trans }}
                     </span>
                     {% if rec.priority >= 3 %}
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                        High priority
+                        {{ 'recommendation.priority_high'|trans }}
                     </span>
                     {% elseif rec.priority == 2 %}
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
-                        Medium priority
+                        {{ 'recommendation.priority_medium'|trans }}
                     </span>
                     {% endif %}
                     <span class="text-xs text-gray-400">{{ rec.period }}</span>
                 </div>
                 <h3 class="text-sm font-semibold text-gray-900 mb-1">{{ rec.title }}</h3>
                 <p class="text-sm text-gray-600">{{ rec.message }}</p>
-                <p class="text-xs text-gray-400 mt-2">Generated {{ rec.generatedAt|date('Y-m-d H:i') }}</p>
+                <p class="text-xs text-gray-400 mt-2">{{ 'recommendation.generated_at'|trans({'%date%': rec.generatedAt|date('Y-m-d H:i')}) }}</p>
             </div>
             <form method="post" action="{{ path('recommendation_mark_seen', {id: rec.id}) }}" class="flex-shrink-0">
                 <input type="hidden" name="_token" value="{{ csrf_token('mark_seen_' ~ rec.id) }}">
                 <button type="submit"
                         class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap">
-                    Mark as seen
+                    {{ 'recommendation.mark_seen'|trans }}
                 </button>
             </form>
         </div>

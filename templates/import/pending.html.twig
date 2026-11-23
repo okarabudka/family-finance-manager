@@ -1,28 +1,28 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Pending Transactions — Family Finance Manager{% endblock %}
+{% block title %}{{ 'import.pending.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex items-center gap-4">
-    <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline text-sm">&larr; Back to imports</a>
-    <h1 class="text-2xl font-bold text-gray-900">Pending Import Transactions</h1>
+    <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline text-sm">&larr; {{ 'import.back'|trans }}</a>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'import.pending.heading'|trans }}</h1>
 </div>
 
 {% if transactions.getTotalItemCount() == 0 %}
     <div class="bg-white rounded-lg shadow p-12 text-center text-gray-400">
-        No pending transactions.
-        <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline ml-1">Back to imports</a>
+        {{ 'import.pending.empty'|trans }}
+        <a href="{{ path('import_list') }}" class="text-indigo-600 hover:underline ml-1">{{ 'import.back'|trans }}</a>
     </div>
 {% else %}
 <div class="bg-white rounded-lg shadow overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Counterparty</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Suggested Category</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.pending.column.date'|trans }}</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'import.pending.column.amount'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.pending.column.description'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.pending.column.counterparty'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.pending.column.suggested_category'|trans }}</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -56,7 +56,7 @@
                         </span>
                         {% if tx.confidenceScore %}
                             <div class="text-xs text-gray-400 mt-0.5">
-                                {{ (tx.confidenceScore * 100)|round }}% confidence
+                                {{ 'import.pending.confidence'|trans({'%percent%': (tx.confidenceScore * 100)|round}) }}
                             </div>
                         {% endif %}
                     {% else %}

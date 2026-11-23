@@ -23,27 +23,27 @@ class NewUserFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'Name',
+                'label'       => 'user.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
-                'label'       => 'Email',
+                'label'       => 'user.form.email',
                 'constraints' => [new NotBlank(), new Email()],
             ])
             ->add('password', RepeatedType::class, [
                 'type'            => PasswordType::class,
                 'mapped'          => false,
-                'first_options'   => ['label' => 'Password', 'attr' => ['autocomplete' => 'new-password']],
-                'second_options'  => ['label' => 'Confirm Password', 'attr' => ['autocomplete' => 'new-password']],
-                'invalid_message' => 'Passwords do not match.',
+                'first_options'   => ['label' => 'user.form.password', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options'  => ['label' => 'user.form.password_confirm', 'attr' => ['autocomplete' => 'new-password']],
+                'invalid_message' => 'user.password.mismatch',
                 'constraints'     => [new NotBlank(), new Length(min: 6)],
             ])
             ->add('roles', ChoiceType::class, [
-                'label'    => 'Role',
+                'label'    => 'user.form.role',
                 'mapped'   => false,
                 'choices'  => [
-                    'Regular Member' => 'ROLE_USER',
-                    'Administrator'  => 'ROLE_ADMIN',
+                    'user.role.member' => 'ROLE_USER',
+                    'user.role.admin' => 'ROLE_ADMIN',
                 ],
                 'expanded' => true,
                 'multiple' => false,

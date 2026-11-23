@@ -91,7 +91,7 @@ class MeterController extends AbstractController
         $em->remove($reading);
         $em->flush();
 
-        $this->addFlash('success', 'Reading deleted.');
+        $this->addFlash('success', 'flash.meter.deleted');
 
         return $this->redirectToRoute('meter_list');
     }

@@ -1,10 +1,10 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Settings — Family Finance Manager{% endblock %}
+{% block title %}{{ 'settings.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'settings.title'|trans }}</h1>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -15,7 +15,7 @@
         {# Profile #}
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-base font-semibold text-gray-900">Profile</h2>
+                <h2 class="text-base font-semibold text-gray-900">{{ 'settings.profile'|trans }}</h2>
             </div>
             <div class="px-6 py-4">
                 {{ form_start(profileForm) }}
@@ -31,7 +31,7 @@
                         {{ form_errors(profileForm.email) }}
                     </div>
                     <hr class="border-gray-200">
-                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Change Password (optional)</p>
+                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">{{ 'settings.change_password'|trans }}</p>
                     <div>
                         {{ form_label(profileForm.currentPassword, null, {label_attr: {class: 'block text-sm font-medium text-gray-700'}}) }}
                         {{ form_widget(profileForm.currentPassword, {attr: {class: 'mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
@@ -51,7 +51,7 @@
                 <div class="mt-6">
                     <button type="submit"
                             class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
-                        Save Profile
+                        {{ 'settings.save_profile'|trans }}
                     </button>
                 </div>
                 {{ form_rest(profileForm) }}
@@ -63,7 +63,7 @@
         {% if familyForm is not null %}
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-base font-semibold text-gray-900">Family Settings</h2>
+                <h2 class="text-base font-semibold text-gray-900">{{ 'settings.family.title'|trans }}</h2>
             </div>
             <div class="px-6 py-4">
                 {{ form_start(familyForm) }}
@@ -82,7 +82,7 @@
                 <div class="mt-6">
                     <button type="submit"
                             class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
-                        Save Family Settings
+                        {{ 'settings.family.save'|trans }}
                     </button>
                 </div>
                 {{ form_end(familyForm) }}
@@ -98,20 +98,20 @@
         {# Account info #}
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-base font-semibold text-gray-900">Account Info</h2>
+                <h2 class="text-base font-semibold text-gray-900">{{ 'settings.account_info'|trans }}</h2>
             </div>
             <div class="px-6 py-4 space-y-3 text-sm">
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Member since</span>
+                    <span class="text-gray-500">{{ 'settings.member_since'|trans }}</span>
                     <span class="text-gray-900">{{ user.createdAt|date('d M Y') }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Role</span>
+                    <span class="text-gray-500">{{ 'settings.role'|trans }}</span>
                     <span class="text-gray-900">
                         {% if 'ROLE_ADMIN' in user.roles %}
-                            <span class="px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800">Admin</span>
+                            <span class="px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800">{{ 'user.role.admin_short'|trans }}</span>
                         {% else %}
-                            <span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Member</span>
+                            <span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{ 'user.role.member_short'|trans }}</span>
                         {% endif %}
                     </span>
                 </div>
@@ -123,13 +123,13 @@
                 {% endif %}
                 {% if user.telegramChatId %}
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Chat ID</span>
+                    <span class="text-gray-500">{{ 'settings.chat_id'|trans }}</span>
                     <span class="text-gray-900 font-mono text-xs">{{ user.telegramChatId }}</span>
                 </div>
                 {% endif %}
                 {% if not user.telegramChatId %}
                 <p class="text-xs text-gray-400 mt-2">
-                    Connect Telegram by sending <code class="bg-gray-100 px-1 rounded">/start</code> to the bot.
+                    {{ 'settings.connect_telegram'|trans({'%command%': '<code class="bg-gray-100 px-1 rounded">/start</code>'})|raw }}
                 </p>
                 {% endif %}
             </div>
@@ -140,11 +140,11 @@
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-base font-semibold text-gray-900">
-                    {{ family.name }} Members
+                    {{ 'settings.members'|trans({'%family%': family.name}) }}
                 </h2>
                 <a href="{{ path('settings_users_new') }}"
                    class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                    + Add
+                    + {{ 'settings.add_member_short'|trans }}
                 </a>
             </div>
             <ul class="divide-y divide-gray-100">
@@ -156,10 +156,10 @@
                     </div>
                     <div class="flex items-center gap-2">
                         {% if 'ROLE_ADMIN' in member.roles %}
-                            <span class="px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">Admin</span>
+                            <span class="px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">{{ 'user.role.admin_short'|trans }}</span>
                         {% endif %}
                         {% if member.telegramChatId %}
-                            <span class="text-xs text-green-600" title="Telegram connected">✓ TG</span>
+                            <span class="text-xs text-green-600" title="{{ 'settings.telegram_connected'|trans }}">✓ TG</span>
                         {% endif %}
                     </div>
                 </li>

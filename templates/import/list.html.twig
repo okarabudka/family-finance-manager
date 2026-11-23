@@ -1,32 +1,32 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Imports — Family Finance Manager{% endblock %}
+{% block title %}{{ 'import.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">Import Files</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'import.heading'|trans }}</h1>
     <a href="{{ path('import_pending') }}"
        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700">
-        Pending Transactions
+        {{ 'import.pending_link'|trans }}
     </a>
 </div>
 
 {% if imports.getTotalItemCount() == 0 %}
     <div class="bg-white rounded-lg shadow p-12 text-center text-gray-400">
-        No import files found.
+        {{ 'import.empty'|trans }}
     </div>
 {% else %}
 <div class="bg-white rounded-lg shadow overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200 text-sm">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filename</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Upload Date</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Imported</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Skipped</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.column.filename'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.column.account'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.column.uploaded_at'|trans }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'import.column.status'|trans }}</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'import.column.total'|trans }}</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'import.column.imported'|trans }}</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'import.column.skipped'|trans }}</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -47,7 +47,7 @@
                 <td class="px-4 py-3">
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                                  {{ statusColors[import.status.value] ?? 'bg-gray-100 text-gray-500' }}">
-                        {{ import.status.value|capitalize }}
+                        {{ import.status|trans }}
                     </span>
                     {% if import.errorMessage %}
                         <div class="text-xs text-red-500 mt-1">{{ import.errorMessage|slice(0, 80) }}</div>

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-enum ReminderFrequency: string
+use Symfony\Contracts\Translation\TranslatableInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+enum ReminderFrequency: string implements TranslatableInterface
 {
     case Daily   = 'daily';
     case Weekly  = 'weekly';
@@ -17,5 +20,10 @@ enum ReminderFrequency: string
             self::Weekly  => 'Weekly',
             self::Monthly => 'Monthly',
         };
+    }
+
+    public function trans(TranslatorInterface $translator, ?string $locale = null): string
+    {
+        return $translator->trans('enum.reminder_frequency.'.$this->value, [], 'messages', $locale);
     }
 }

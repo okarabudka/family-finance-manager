@@ -68,14 +68,14 @@ class AccountController extends AbstractController
             $em->persist($account);
             $em->flush();
 
-            $this->addFlash('success', 'Account created successfully.');
+            $this->addFlash('success', 'flash.account.created');
 
             return $this->redirectToRoute('account_list');
         }
 
         return $this->render('account/form.html.twig', [
             'form'  => $form,
-            'title' => 'New Account',
+            'title' => 'account.new',
         ]);
     }
 
@@ -101,14 +101,14 @@ class AccountController extends AbstractController
             $em->flush();
             $accountService->invalidateCache($account);
 
-            $this->addFlash('success', 'Account updated successfully.');
+            $this->addFlash('success', 'flash.account.updated');
 
             return $this->redirectToRoute('account_list');
         }
 
         return $this->render('account/form.html.twig', [
             'form'    => $form,
-            'title'   => 'Edit Account',
+            'title'   => 'account.edit',
             'account' => $account,
         ]);
     }

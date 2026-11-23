@@ -1,0 +1,15 @@
+account:
+    name:
+        not_blank: "Введите название счёта."
+category:
+    name:
+        not_blank: "Введите название категории."
+login:
+    email:
+        not_blank: "Введите e-mail."
+        invalid: "Некорректный e-mail."
+    password:
+        not_blank: "Введите пароль."
+user:
+    password:
+        mismatch: "Пароли не совпадают."

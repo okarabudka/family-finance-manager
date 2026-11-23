@@ -69,14 +69,14 @@ class BudgetController extends AbstractController
             $em->persist($budget);
             $em->flush();
 
-            $this->addFlash('success', 'Budget created successfully.');
+            $this->addFlash('success', 'flash.budget.created');
 
             return $this->redirectToRoute('budget_list');
         }
 
         return $this->render('budget/form.html.twig', [
             'form'  => $form,
-            'title' => 'New Budget',
+            'title' => 'budget.new',
         ]);
     }
 
@@ -100,14 +100,14 @@ class BudgetController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
 
-            $this->addFlash('success', 'Budget updated successfully.');
+            $this->addFlash('success', 'flash.budget.updated');
 
             return $this->redirectToRoute('budget_list');
         }
 
         return $this->render('budget/form.html.twig', [
             'form'   => $form,
-            'title'  => 'Edit Budget',
+            'title'  => 'budget.edit',
             'budget' => $budget,
         ]);
     }
@@ -129,9 +129,9 @@ class BudgetController extends AbstractController
         if ($this->isCsrfTokenValid('delete_budget_' . $budget->getId(), $request->request->get('_token'))) {
             $em->remove($budget);
             $em->flush();
-            $this->addFlash('success', 'Budget deleted.');
+            $this->addFlash('success', 'flash.budget.deleted');
         } else {
-            $this->addFlash('error', 'Invalid CSRF token.');
+            $this->addFlash('error', 'flash.invalid_csrf');
         }
 
         return $this->redirectToRoute('budget_list');

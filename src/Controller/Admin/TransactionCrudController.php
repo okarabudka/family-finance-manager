@@ -25,22 +25,25 @@ class TransactionCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setDefaultSort(['executedAt' => 'DESC']);
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.transaction.singular')
+            ->setEntityLabelInPlural('admin.entity.transaction.plural')
+            ->setDefaultSort(['executedAt' => 'DESC']);
     }
 
     public function configureFields(string $pageName): iterable
     {
-        yield IdField::new('id')->hideOnForm();
-        yield AssociationField::new('family');
-        yield ChoiceField::new('type')->setChoices(TransactionType::cases());
-        yield MoneyField::new('amount')->setCurrency('EUR');
-        yield TextField::new('currency');
-        yield DateField::new('executedAt');
-        yield AssociationField::new('category');
-        yield AssociationField::new('sourceAccount');
-        yield AssociationField::new('targetAccount')->hideOnIndex();
-        yield TextField::new('description')->hideOnIndex();
-        yield AssociationField::new('createdBy')->hideOnIndex();
-        yield DateTimeField::new('createdAt')->hideOnForm();
+        yield IdField::new('id', 'admin.field.id')->hideOnForm();
+        yield AssociationField::new('family', 'admin.field.family');
+        yield ChoiceField::new('type', 'admin.field.type')->setChoices(TransactionType::cases());
+        yield MoneyField::new('amount', 'admin.field.amount')->setCurrency('EUR');
+        yield TextField::new('currency', 'admin.field.currency');
+        yield DateField::new('executedAt', 'admin.field.executed_at');
+        yield AssociationField::new('category', 'admin.field.category');
+        yield AssociationField::new('sourceAccount', 'admin.field.source_account');
+        yield AssociationField::new('targetAccount', 'admin.field.target_account')->hideOnIndex();
+        yield TextField::new('description', 'admin.field.description')->hideOnIndex();
+        yield AssociationField::new('createdBy', 'admin.field.created_by')->hideOnIndex();
+        yield DateTimeField::new('createdAt', 'admin.field.created_at')->hideOnForm();
     }
 }

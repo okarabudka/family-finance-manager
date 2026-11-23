@@ -8,6 +8,7 @@ use App\Domain\Analytics\AnalyticsService;
 use App\Entity\Family;
 use App\Repository\CategoryRepository;
 use App\Repository\TransactionRepository;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class SuggestionService
 {
@@ -15,6 +16,7 @@ class SuggestionService
         private readonly AnalyticsService $analyticsService,
         private readonly TransactionRepository $txRepo,
         private readonly CategoryRepository $categoryRepo,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**
@@ -47,16 +49,16 @@ class SuggestionService
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::ExpenseSpike,
                     priority: SuggestionPriority::High,
-                    title: "Expense increase: {$comp->category->getName()}",
-                    message: sprintf(
-                        'This month you spent %.0f %s on %s, which is %.0f%% more than last month (%.0f %s).',
-                        $comp->currentAmount,
-                        $currency,
-                        $comp->category->getName(),
-                        $comp->diffPercent,
-                        $comp->previousAmount,
-                        $currency,
-                    ),
+                    title: $this->translator->trans('suggestion.expense_spike.title', [
+                        '%category%' => $comp->category->getName(),
+                    ]),
+                    message: $this->translator->trans('suggestion.expense_spike.message', [
+                        '%current%'  => sprintf('%.0f', $comp->currentAmount),
+                        '%previous%' => sprintf('%.0f', $comp->previousAmount),
+                        '%percent%'  => sprintf('%.0f', $comp->diffPercent),
+                        '%currency%' => $currency,
+                        '%category%' => $comp->category->getName(),
+                    ]),
                     category: $comp->category,
                     amount: $comp->diff,
                 );
@@ -69,16 +71,16 @@ class SuggestionService
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::BudgetExceeded,
                     priority: SuggestionPriority::High,
-                    title: "Budget exceeded: {$catReport->category->getName()}",
-                    message: sprintf(
-                        'Budget for %s exceeded by %.0f%%. Spent %.0f %s of %.0f %s planned.',
-                        $catReport->category->getName(),
-                        $catReport->budgetUsedPercent - 100,
-                        $catReport->amount,
-                        $currency,
-                        $catReport->budgetAmount,
-                        $currency,
-                    ),
+                    title: $this->translator->trans('suggestion.budget_exceeded.title', [
+                        '%category%' => $catReport->category->getName(),
+                    ]),
+                    message: $this->translator->trans('suggestion.budget_exceeded.message', [
+                        '%category%' => $catReport->category->getName(),
+                        '%percent%'  => sprintf('%.0f', $catReport->budgetUsedPercent - 100),
+                        '%spent%'    => sprintf('%.0f', $catReport->amount),
+                        '%planned%'  => sprintf('%.0f', $catReport->budgetAmount),
+                        '%currency%' => $currency,
+                    ]),
                     category: $catReport->category,
                     amount: $catReport->amount - ($catReport->budgetAmount ?? 0),
                 );
@@ -91,13 +93,12 @@ class SuggestionService
             $suggestions[] = new Suggestion(
                 type: SuggestionType::NegativeBalance,
                 priority: SuggestionPriority::Critical,
-                title: 'Expenses exceed income',
-                message: sprintf(
-                    '%d days left this month. Expenses exceed income by %.0f %s.',
-                    $daysLeft,
-                    abs($comparison->current->balance),
-                    $currency,
-                ),
+                title: $this->translator->trans('suggestion.negative_balance.title'),
+                message: $this->translator->trans('suggestion.negative_balance.message', [
+                    '%days%'     => $daysLeft,
+                    '%amount%'   => sprintf('%.0f', abs($comparison->current->balance)),
+                    '%currency%' => $currency,
+                ]),
             );
         }
 
@@ -127,8 +128,12 @@ class SuggestionService
                 $suggestions[] = new Suggestion(
                     type: SuggestionType::MissingRegularExpense,
                     priority: SuggestionPriority::Medium,
-                    title: "No records: {$category->getName()}",
-                    message: "In previous months you had regular expenses for \"{$category->getName()}\", but none this month yet. Everything OK?",
+                    title: $this->translator->trans('suggestion.missing_expense.title', [
+                        '%category%' => $category->getName(),
+                    ]),
+                    message: $this->translator->trans('suggestion.missing_expense.message', [
+                        '%category%' => $category->getName(),
+                    ]),
                     category: $category,
                 );
             }

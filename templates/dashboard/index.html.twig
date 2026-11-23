@@ -1,21 +1,21 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Dashboard — Family Finance Manager{% endblock %}
+{% block title %}{{ 'dashboard.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'dashboard.title'|trans }}</h1>
     <a href="{{ path('transaction_new') }}"
        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-        + Add Transaction
+        + {{ 'dashboard.add_transaction'|trans }}
     </a>
 </div>
 
 {# Account balance cards #}
 {% if accounts is empty %}
     <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500 mb-6">
-        No accounts yet.
-        <a href="{{ path('account_new') }}" class="text-indigo-600 hover:underline ml-1">Create one</a>
+        {{ 'account.empty'|trans }}
+        <a href="{{ path('account_new') }}" class="text-indigo-600 hover:underline ml-1">{{ 'dashboard.create_account'|trans }}</a>
     </div>
 {% else %}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -23,13 +23,13 @@
     <div class="bg-white rounded-lg shadow p-4">
         <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-medium text-gray-500">{{ account.name }}</span>
-            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ account.type.value }}</span>
+            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ account.type|trans }}</span>
         </div>
         <div class="text-2xl font-bold {{ balances[account.id ~ ''] >= 0 ? 'text-green-600' : 'text-red-600' }}">
             {{ balances[account.id ~ '']|number_format(2, '.', ',') }} {{ account.currency }}
         </div>
         <div class="mt-2">
-            <a href="{{ path('account_edit', {id: account.id}) }}" class="text-xs text-indigo-500 hover:underline">Edit</a>
+            <a href="{{ path('account_edit', {id: account.id}) }}" class="text-xs text-indigo-500 hover:underline">{{ 'common.edit'|trans }}</a>
         </div>
     </div>
     {% endfor %}
@@ -39,15 +39,15 @@
 {# Monthly summary #}
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="text-sm text-green-700 font-medium">Income this month</div>
+        <div class="text-sm text-green-700 font-medium">{{ 'dashboard.income_this_month'|trans }}</div>
         <div class="text-2xl font-bold text-green-800">{{ monthlyReport.totalIncome|number_format(2, '.', ',') }}</div>
     </div>
     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div class="text-sm text-red-700 font-medium">Expenses this month</div>
+        <div class="text-sm text-red-700 font-medium">{{ 'dashboard.expenses_this_month'|trans }}</div>
         <div class="text-2xl font-bold text-red-800">{{ monthlyReport.totalExpenses|number_format(2, '.', ',') }}</div>
     </div>
     <div class="bg-{{ monthlyReport.balance >= 0 ? 'blue' : 'orange' }}-50 border border-{{ monthlyReport.balance >= 0 ? 'blue' : 'orange' }}-200 rounded-lg p-4">
-        <div class="text-sm text-{{ monthlyReport.balance >= 0 ? 'blue' : 'orange' }}-700 font-medium">Balance</div>
+        <div class="text-sm text-{{ monthlyReport.balance >= 0 ? 'blue' : 'orange' }}-700 font-medium">{{ 'dashboard.balance'|trans }}</div>
         <div class="text-2xl font-bold text-{{ monthlyReport.balance >= 0 ? 'blue' : 'orange' }}-800">
             {{ monthlyReport.balance|number_format(2, '.', ',') }}
         </div>
@@ -57,9 +57,9 @@
 {# Charts #}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="bg-white rounded-lg shadow p-4">
-        <h3 class="text-base font-semibold text-gray-900 mb-4">Expenses by Category</h3>
+        <h3 class="text-base font-semibold text-gray-900 mb-4">{{ 'dashboard.expenses_by_category'|trans }}</h3>
         {% if categoryLabels is empty %}
-            <p class="text-gray-400 text-sm text-center py-8">No expense data for this month.</p>
+            <p class="text-gray-400 text-sm text-center py-8">{{ 'dashboard.no_expense_data'|trans }}</p>
         {% else %}
             <canvas id="categoryChart" height="250" data-chart="{{ {
                 type: 'doughnut',
@@ -70,12 +70,12 @@
     </div>
 
     <div class="bg-white rounded-lg shadow p-4">
-        <h3 class="text-base font-semibold text-gray-900 mb-4">6-Month Trend</h3>
+        <h3 class="text-base font-semibold text-gray-900 mb-4">{{ 'dashboard.trend'|trans }}</h3>
         <canvas id="trendChart" height="250" data-chart="{{ {
             type: 'bar',
             data: {labels: trendLabels, datasets: [
-                {label: 'Expenses', data: trendExpenses, backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: 'rgb(239, 68, 68)', borderWidth: 1},
-                {label: 'Income', data: trendIncome, backgroundColor: 'rgba(34, 197, 94, 0.6)', borderColor: 'rgb(34, 197, 94)', borderWidth: 1},
+                {label: 'dashboard.chart.expenses'|trans, data: trendExpenses, backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: 'rgb(239, 68, 68)', borderWidth: 1},
+                {label: 'dashboard.chart.income'|trans, data: trendIncome, backgroundColor: 'rgba(34, 197, 94, 0.6)', borderColor: 'rgb(34, 197, 94)', borderWidth: 1},
             ]},
             options: {responsive: true, scales: {y: {beginAtZero: true}}, plugins: {legend: {position: 'bottom'}}},
         }|json_encode }}"></canvas>
@@ -86,16 +86,16 @@
 {% if monthlyReport.byCategory is not empty %}
 <div class="bg-white rounded-lg shadow mb-6">
     <div class="px-4 py-3 border-b border-gray-200">
-        <h3 class="text-base font-semibold text-gray-900">Category Breakdown</h3>
+        <h3 class="text-base font-semibold text-gray-900">{{ 'dashboard.category_breakdown'|trans }}</h3>
     </div>
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'dashboard.column.category'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'dashboard.column.amount'|trans }}</th>
                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Budget</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'dashboard.column.budget'|trans }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -110,7 +110,7 @@
                     <td class="px-4 py-3 text-right">
                         {% if catReport.budgetAmount %}
                             <span class="{{ catReport.budgetUsedPercent > 100 ? 'text-red-600 font-semibold' : 'text-gray-500' }}">
-                                {{ catReport.budgetUsedPercent|number_format(0) }}% of {{ catReport.budgetAmount|number_format(0) }}
+                                {{ 'dashboard.budget_used'|trans({'%percent%': catReport.budgetUsedPercent|number_format(0), '%amount%': catReport.budgetAmount|number_format(0)}) }}
                             </span>
                         {% else %}
                             <span class="text-gray-300">—</span>
@@ -127,7 +127,7 @@
 {# Suggestions / Recommendations #}
 {% if suggestions is not empty %}
 <div class="mb-6">
-    <h3 class="text-base font-semibold text-gray-900 mb-3">Recommendations</h3>
+    <h3 class="text-base font-semibold text-gray-900 mb-3">{{ 'recommendation.title'|trans }}</h3>
     {% for suggestion in suggestions %}
         {% set priorityColor = suggestion.priority.value >= 4 ? 'red' : (suggestion.priority.value >= 3 ? 'orange' : (suggestion.priority.value >= 2 ? 'yellow' : 'blue')) %}
         <div class="bg-{{ priorityColor }}-50 border border-{{ priorityColor }}-200 rounded-lg p-4 mb-2">

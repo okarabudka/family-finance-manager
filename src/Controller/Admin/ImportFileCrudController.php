@@ -25,7 +25,10 @@ class ImportFileCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setDefaultSort(['createdAt' => 'DESC']);
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.import_file.singular')
+            ->setEntityLabelInPlural('admin.entity.import_file.plural')
+            ->setDefaultSort(['createdAt' => 'DESC']);
     }
 
     public function configureActions(Actions $actions): Actions
@@ -35,14 +38,14 @@ class ImportFileCrudController extends AbstractCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield IdField::new('id')->hideOnForm();
-        yield AssociationField::new('account');
-        yield TextField::new('originalFilename');
-        yield TextField::new('format');
-        yield ChoiceField::new('status');
-        yield IntegerField::new('totalRows');
-        yield IntegerField::new('importedRows');
-        yield TextField::new('errorMessage')->hideOnIndex();
-        yield DateTimeField::new('createdAt')->hideOnForm();
+        yield IdField::new('id', 'admin.field.id')->hideOnForm();
+        yield AssociationField::new('account', 'admin.field.account');
+        yield TextField::new('originalFilename', 'admin.field.original_filename');
+        yield TextField::new('format', 'admin.field.format');
+        yield ChoiceField::new('status', 'admin.field.status');
+        yield IntegerField::new('totalRows', 'admin.field.total_rows');
+        yield IntegerField::new('importedRows', 'admin.field.imported_rows');
+        yield TextField::new('errorMessage', 'admin.field.error_message')->hideOnIndex();
+        yield DateTimeField::new('createdAt', 'admin.field.created_at')->hideOnForm();
     }
 }

@@ -6,12 +6,12 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center py-4">
                 <div class="fs-1 text-primary mb-2"><i class="fa fa-users"></i></div>
-                <h5 class="card-title">Users &amp; Families</h5>
-                <p class="card-text text-muted small">Manage user accounts, roles and family groups.</p>
+                <h5 class="card-title">{{ 'admin.home.users.title'|trans }}</h5>
+                <p class="card-text text-muted small">{{ 'admin.home.users.text'|trans }}</p>
                 <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController') }}"
-                   class="btn btn-primary btn-sm">Users</a>
+                   class="btn btn-primary btn-sm">{{ 'admin.menu.users'|trans }}</a>
                 <a href="{{ ea_url().setController('App\\Controller\\Admin\\FamilyCrudController') }}"
-                   class="btn btn-outline-primary btn-sm ms-1">Families</a>
+                   class="btn btn-outline-primary btn-sm ms-1">{{ 'admin.menu.families'|trans }}</a>
             </div>
         </div>
     </div>
@@ -19,12 +19,12 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center py-4">
                 <div class="fs-1 text-success mb-2"><i class="fa fa-exchange-alt"></i></div>
-                <h5 class="card-title">Finance</h5>
-                <p class="card-text text-muted small">Browse transactions, accounts, categories and budgets.</p>
+                <h5 class="card-title">{{ 'admin.home.finance.title'|trans }}</h5>
+                <p class="card-text text-muted small">{{ 'admin.home.finance.text'|trans }}</p>
                 <a href="{{ ea_url().setController('App\\Controller\\Admin\\TransactionCrudController') }}"
-                   class="btn btn-success btn-sm">Transactions</a>
+                   class="btn btn-success btn-sm">{{ 'admin.menu.transactions'|trans }}</a>
                 <a href="{{ ea_url().setController('App\\Controller\\Admin\\AccountCrudController') }}"
-                   class="btn btn-outline-success btn-sm ms-1">Accounts</a>
+                   class="btn btn-outline-success btn-sm ms-1">{{ 'admin.menu.accounts'|trans }}</a>
             </div>
         </div>
     </div>
@@ -32,10 +32,10 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center py-4">
                 <div class="fs-1 text-warning mb-2"><i class="fa fa-file-import"></i></div>
-                <h5 class="card-title">Imports</h5>
-                <p class="card-text text-muted small">View imported files and their processing status.</p>
+                <h5 class="card-title">{{ 'admin.home.imports.title'|trans }}</h5>
+                <p class="card-text text-muted small">{{ 'admin.home.imports.text'|trans }}</p>
                 <a href="{{ ea_url().setController('App\\Controller\\Admin\\ImportFileCrudController') }}"
-                   class="btn btn-warning btn-sm">Import Files</a>
+                   class="btn btn-warning btn-sm">{{ 'admin.menu.import_files'|trans }}</a>
             </div>
         </div>
     </div>

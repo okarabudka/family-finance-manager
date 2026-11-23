@@ -1,0 +1,15 @@
+account:
+    name:
+        not_blank: "Please enter an account name."
+category:
+    name:
+        not_blank: "Please enter a category name."
+login:
+    email:
+        not_blank: "Please enter your email."
+        invalid: "This is not a valid email address."
+    password:
+        not_blank: "Please enter your password."
+user:
+    password:
+        mismatch: "The passwords do not match."

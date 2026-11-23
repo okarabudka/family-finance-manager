@@ -7,6 +7,7 @@ namespace App\Controller\Admin;
 use App\Entity\ReminderFrequency;
 use App\Entity\ReminderTemplate;
 use App\Entity\ReminderType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
@@ -23,47 +24,48 @@ class ReminderTemplateCrudController extends AbstractCrudController
         return ReminderTemplate::class;
     }
 
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.reminder_template.singular')
+            ->setEntityLabelInPlural('admin.entity.reminder_template.plural');
+    }
+
     public function configureFields(string $pageName): iterable
     {
-        yield TextField::new('name', 'Name');
+        yield TextField::new('name', 'admin.field.name');
 
-        yield AssociationField::new('family', 'Family')
+        yield AssociationField::new('family', 'admin.field.family')
             ->setRequired(false)
-            ->setHelp('Leave empty to send to ALL families.');
+            ->setHelp('admin.help.reminder_family');
 
-        yield ChoiceField::new('type', 'Type')
-            ->setChoices(array_combine(
-                array_map(fn(ReminderType $t) => $t->label(), ReminderType::cases()),
-                array_map(fn(ReminderType $t) => $t->value, ReminderType::cases()),
-            ));
+        yield ChoiceField::new('type', 'admin.field.type')
+            ->setChoices(ReminderType::cases());
 
-        yield ChoiceField::new('frequency', 'Frequency')
-            ->setChoices(array_combine(
-                array_map(fn(ReminderFrequency $f) => $f->label(), ReminderFrequency::cases()),
-                array_map(fn(ReminderFrequency $f) => $f->value, ReminderFrequency::cases()),
-            ));
+        yield ChoiceField::new('frequency', 'admin.field.frequency')
+            ->setChoices(ReminderFrequency::cases());
 
-        yield IntegerField::new('sendHour', 'Send at hour (0–23)')
-            ->setHelp('Command runs hourly — reminder fires in the matching hour.');
+        yield IntegerField::new('sendHour', 'admin.field.send_hour')
+            ->setHelp('admin.help.send_hour');
 
-        yield IntegerField::new('dayOfWeek', 'Day of week (1=Mon … 7=Sun)')
+        yield IntegerField::new('dayOfWeek', 'admin.field.day_of_week')
             ->setRequired(false)
-            ->setHelp('For weekly frequency only.');
+            ->setHelp('admin.help.weekly_only');
 
-        yield IntegerField::new('dayOfMonth', 'Day of month (1–31)')
+        yield IntegerField::new('dayOfMonth', 'admin.field.day_of_month')
             ->setRequired(false)
-            ->setHelp('For monthly frequency only.');
+            ->setHelp('admin.help.monthly_only');
 
-        yield TextareaField::new('messageText', 'Message text');
+        yield TextareaField::new('messageText', 'admin.field.message_text');
 
-        yield BooleanField::new('sendViaTelegram', 'Send via Telegram');
-        yield BooleanField::new('sendViaEmail', 'Send via Email');
-        yield BooleanField::new('isActive', 'Active');
+        yield BooleanField::new('sendViaTelegram', 'admin.field.send_via_telegram');
+        yield BooleanField::new('sendViaEmail', 'admin.field.send_via_email');
+        yield BooleanField::new('isActive', 'admin.field.is_active');
 
-        yield DateTimeField::new('lastSentAt', 'Last sent at')
+        yield DateTimeField::new('lastSentAt', 'admin.field.last_sent_at')
             ->hideOnForm();
 
-        yield DateTimeField::new('createdAt', 'Created at')
+        yield DateTimeField::new('createdAt', 'admin.field.created_at')
             ->hideOnForm();
     }
 }

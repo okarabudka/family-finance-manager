@@ -108,14 +108,14 @@ class TransactionController extends AbstractController
                 ),
             };
 
-            $this->addFlash('success', 'Transaction added successfully.');
+            $this->addFlash('success', 'flash.transaction.created');
 
             return $this->redirectToRoute('transaction_list');
         }
 
         return $this->render('transaction/form.html.twig', [
             'form'  => $form,
-            'title' => 'New Transaction',
+            'title' => 'transaction.new',
         ]);
     }
 
@@ -161,14 +161,14 @@ class TransactionController extends AbstractController
                 'executedAt'  => $executedAt,
             ]);
 
-            $this->addFlash('success', 'Transaction updated successfully.');
+            $this->addFlash('success', 'flash.transaction.updated');
 
             return $this->redirectToRoute('transaction_list');
         }
 
         return $this->render('transaction/form.html.twig', [
             'form'        => $form,
-            'title'       => 'Edit Transaction',
+            'title'       => 'transaction.edit',
             'transaction' => $transaction,
         ]);
     }
@@ -189,9 +189,9 @@ class TransactionController extends AbstractController
 
         if ($this->isCsrfTokenValid('delete_transaction_' . $transaction->getId(), $request->request->get('_token'))) {
             $transactionService->delete($transaction);
-            $this->addFlash('success', 'Transaction deleted.');
+            $this->addFlash('success', 'flash.transaction.deleted');
         } else {
-            $this->addFlash('error', 'Invalid CSRF token.');
+            $this->addFlash('error', 'flash.invalid_csrf');
         }
 
         return $this->redirectToRoute('transaction_list');

@@ -54,9 +54,9 @@ class RecommendationController extends AbstractController
         if ($this->isCsrfTokenValid('mark_seen_' . $recommendation->getId(), $request->request->get('_token'))) {
             $recommendation->setSeenByUser(true);
             $em->flush();
-            $this->addFlash('success', 'Recommendation marked as seen.');
+            $this->addFlash('success', 'flash.recommendation.seen');
         } else {
-            $this->addFlash('error', 'Invalid CSRF token.');
+            $this->addFlash('error', 'flash.invalid_csrf');
         }
 
         return $this->redirectToRoute('recommendation_list');

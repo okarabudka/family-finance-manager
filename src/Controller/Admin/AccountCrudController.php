@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Account;
 use App\Entity\AccountType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
@@ -21,17 +22,24 @@ class AccountCrudController extends AbstractCrudController
         return Account::class;
     }
 
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.account.singular')
+            ->setEntityLabelInPlural('admin.entity.account.plural');
+    }
+
     public function configureFields(string $pageName): iterable
     {
-        yield IdField::new('id')->hideOnForm();
-        yield AssociationField::new('family');
-        yield TextField::new('name');
-        yield ChoiceField::new('type')->setChoices(AccountType::cases());
-        yield TextField::new('currency');
-        yield MoneyField::new('initialBalance')->setCurrency('EUR');
-        yield TextField::new('iban')->hideOnIndex();
-        yield BooleanField::new('isActive');
-        yield BooleanField::new('includeInTotal');
-        yield BooleanField::new('isDefault')->hideOnIndex();
+        yield IdField::new('id', 'admin.field.id')->hideOnForm();
+        yield AssociationField::new('family', 'admin.field.family');
+        yield TextField::new('name', 'admin.field.name');
+        yield ChoiceField::new('type', 'admin.field.type')->setChoices(AccountType::cases());
+        yield TextField::new('currency', 'admin.field.currency');
+        yield MoneyField::new('initialBalance', 'admin.field.initial_balance')->setCurrency('EUR');
+        yield TextField::new('iban', 'admin.field.iban')->hideOnIndex();
+        yield BooleanField::new('isActive', 'admin.field.is_active');
+        yield BooleanField::new('includeInTotal', 'admin.field.include_in_total');
+        yield BooleanField::new('isDefault', 'admin.field.is_default')->hideOnIndex();
     }
 }

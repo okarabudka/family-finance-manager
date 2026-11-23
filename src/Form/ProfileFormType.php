@@ -22,27 +22,27 @@ class ProfileFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'Name',
+                'label'       => 'user.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 2, max: 100)],
             ])
             ->add('email', EmailType::class, [
-                'label'       => 'Email',
+                'label'       => 'user.form.email',
                 'constraints' => [new NotBlank(), new Email()],
             ])
             ->add('currentPassword', PasswordType::class, [
-                'label'    => 'Current Password',
+                'label'    => 'user.form.current_password',
                 'mapped'   => false,
                 'required' => false,
                 'attr'     => ['autocomplete' => 'current-password'],
-                'help'     => 'Required only when changing password.',
+                'help'     => 'user.form.current_password_help',
             ])
             ->add('newPassword', RepeatedType::class, [
                 'type'            => PasswordType::class,
                 'mapped'          => false,
                 'required'        => false,
-                'first_options'   => ['label' => 'New Password', 'attr' => ['autocomplete' => 'new-password']],
-                'second_options'  => ['label' => 'Confirm New Password', 'attr' => ['autocomplete' => 'new-password']],
-                'invalid_message' => 'Passwords do not match.',
+                'first_options'   => ['label' => 'user.form.new_password', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options'  => ['label' => 'user.form.new_password_confirm', 'attr' => ['autocomplete' => 'new-password']],
+                'invalid_message' => 'user.password.mismatch',
                 'constraints'     => [new Length(min: 6)],
             ]);
     }

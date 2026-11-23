@@ -20,20 +20,20 @@ class FamilySettingsFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label'       => 'Family Name',
+                'label'       => 'settings.family.form.name',
                 'constraints' => [new NotBlank(), new Length(min: 1, max: 100)],
             ])
             ->add('currency', ChoiceType::class, [
-                'label'   => 'Currency',
+                'label'   => 'settings.family.form.currency',
                 'choices' => [
-                    'Euro (EUR)'           => 'EUR',
-                    'US Dollar (USD)'      => 'USD',
-                    'British Pound (GBP)'  => 'GBP',
-                    'Swiss Franc (CHF)'    => 'CHF',
-                    'Russian Ruble (RUB)'  => 'RUB',
-                    'Polish Zloty (PLN)'   => 'PLN',
-                    'Czech Koruna (CZK)'   => 'CZK',
-                    'Ukrainian Hryvnia (UAH)' => 'UAH',
+                    'currency.eur' => 'EUR',
+                    'currency.usd' => 'USD',
+                    'currency.gbp' => 'GBP',
+                    'currency.chf' => 'CHF',
+                    'currency.rub' => 'RUB',
+                    'currency.pln' => 'PLN',
+                    'currency.czk' => 'CZK',
+                    'currency.uah' => 'UAH',
                 ],
             ]);
     }

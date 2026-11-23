@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
@@ -27,23 +28,30 @@ class UserCrudController extends AbstractCrudController
         return User::class;
     }
 
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.user.singular')
+            ->setEntityLabelInPlural('admin.entity.user.plural');
+    }
+
     public function configureFields(string $pageName): iterable
     {
-        yield IdField::new('id')->hideOnForm();
-        yield EmailField::new('email');
-        yield TextField::new('name');
-        yield TextField::new('password')
+        yield IdField::new('id', 'admin.field.id')->hideOnForm();
+        yield EmailField::new('email', 'admin.field.email');
+        yield TextField::new('name', 'admin.field.name');
+        yield TextField::new('password', 'admin.field.password')
             ->setFormType(PasswordType::class)
             ->setRequired($pageName === 'new')
             ->onlyOnForms()
-            ->setHelp('Leave blank to keep the current password (edit only).');
-        yield ChoiceField::new('roles')
-            ->setChoices(['User' => 'ROLE_USER', 'Admin' => 'ROLE_ADMIN'])
+            ->setHelp('admin.help.password');
+        yield ChoiceField::new('roles', 'admin.field.roles')
+            ->setChoices(['user.role.member_short' => 'ROLE_USER', 'user.role.admin_short' => 'ROLE_ADMIN'])
             ->allowMultipleChoices()
             ->renderExpanded();
-        yield AssociationField::new('family');
-        yield TextField::new('telegramUsername')->hideOnIndex();
-        yield DateTimeField::new('createdAt')->hideOnForm();
+        yield AssociationField::new('family', 'admin.field.family');
+        yield TextField::new('telegramUsername', 'admin.field.telegram_username')->hideOnIndex();
+        yield DateTimeField::new('createdAt', 'admin.field.created_at')->hideOnForm();
     }
 
     public function persistEntity(EntityManagerInterface $entityManager, mixed $entityInstance): void

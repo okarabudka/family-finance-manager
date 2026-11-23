@@ -1,41 +1,41 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Meter Readings — Family Finance Manager{% endblock %}
+{% block title %}{{ 'meter.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Meter Readings</h1>
-    <p class="text-sm text-gray-500 mt-1">Add readings via Telegram: <code class="bg-gray-100 px-1 rounded">/meter</code></p>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'meter.title'|trans }}</h1>
+    <p class="text-sm text-gray-500 mt-1">{{ 'meter.telegram_hint'|trans }} <code class="bg-gray-100 px-1 rounded">/meter</code></p>
 </div>
 
 {# ───── Electricity ───── #}
 <div class="mb-10">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <span>⚡</span> Electricity (kWh)
+        <span>⚡</span> {{ 'meter.electricity_heading'|trans }}
     </h2>
 
     {% if electricityChart.labels is not empty %}
     <div class="bg-white rounded-lg shadow p-4 mb-4">
         <canvas id="electricityChart" height="120" data-chart="{{ {
             type: 'bar',
-            data: {labels: electricityChart.labels, datasets: [{label: 'Electricity consumption (kWh)', data: electricityChart.data, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgb(99, 102, 241)', borderWidth: 1}]},
+            data: {labels: electricityChart.labels, datasets: [{label: 'meter.chart.electricity'|trans, data: electricityChart.data, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgb(99, 102, 241)', borderWidth: 1}]},
             options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, title: {display: true, text: 'kWh'}}}},
         }|json_encode }}"></canvas>
     </div>
     {% endif %}
 
     {% if electricityReadings is empty %}
-        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">No electricity readings yet.</div>
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">{{ 'meter.empty_electricity'|trans }}</div>
     {% else %}
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reading (kWh)</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Consumption</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Photo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.date'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.reading_kwh'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.consumption'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.notes'|trans }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.photo'|trans }}</th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
@@ -55,16 +55,16 @@
                     <td class="px-4 py-3 text-center">
                         {% if item.reading.photoPath %}
                             <a href="{{ path('meter_photo', {id: item.reading.id}) }}" target="_blank"
-                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">View</a>
+                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">{{ 'meter.view_photo'|trans }}</a>
                         {% else %}
                             <span class="text-gray-300 text-xs">—</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3 text-right">
                         <form method="post" action="{{ path('meter_delete', {id: item.reading.id}) }}"
-                              onsubmit="return confirm('Delete this reading?')">
+                              onsubmit="return confirm({{ 'meter.confirm_delete'|trans|json_encode }})">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete_meter_' ~ item.reading.id) }}">
-                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">{{ 'common.delete'|trans }}</button>
                         </form>
                     </td>
                 </tr>
@@ -78,31 +78,31 @@
 {# ───── Water ───── #}
 <div class="mb-10">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <span>💧</span> Water (m³)
+        <span>💧</span> {{ 'meter.water_heading'|trans }}
     </h2>
 
     {% if waterChart.labels is not empty %}
     <div class="bg-white rounded-lg shadow p-4 mb-4">
         <canvas id="waterChart" height="120" data-chart="{{ {
             type: 'bar',
-            data: {labels: waterChart.labels, datasets: [{label: 'Water consumption (m³)', data: waterChart.data, backgroundColor: 'rgba(6, 182, 212, 0.5)', borderColor: 'rgb(6, 182, 212)', borderWidth: 1}]},
+            data: {labels: waterChart.labels, datasets: [{label: 'meter.chart.water'|trans, data: waterChart.data, backgroundColor: 'rgba(6, 182, 212, 0.5)', borderColor: 'rgb(6, 182, 212)', borderWidth: 1}]},
             options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, title: {display: true, text: 'm³'}}}},
         }|json_encode }}"></canvas>
     </div>
     {% endif %}
 
     {% if waterReadings is empty %}
-        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">No water readings yet.</div>
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">{{ 'meter.empty_water'|trans }}</div>
     {% else %}
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reading (m³)</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Consumption</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Photo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.date'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.reading_m3'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.consumption'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.notes'|trans }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ 'meter.column.photo'|trans }}</th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
@@ -122,16 +122,16 @@
                     <td class="px-4 py-3 text-center">
                         {% if item.reading.photoPath %}
                             <a href="{{ path('meter_photo', {id: item.reading.id}) }}" target="_blank"
-                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">View</a>
+                               class="text-indigo-600 hover:text-indigo-800 text-xs underline">{{ 'meter.view_photo'|trans }}</a>
                         {% else %}
                             <span class="text-gray-300 text-xs">—</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3 text-right">
                         <form method="post" action="{{ path('meter_delete', {id: item.reading.id}) }}"
-                              onsubmit="return confirm('Delete this reading?')">
+                              onsubmit="return confirm({{ 'meter.confirm_delete'|trans|json_encode }})">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete_meter_' ~ item.reading.id) }}">
-                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">{{ 'common.delete'|trans }}</button>
                         </form>
                     </td>
                 </tr>

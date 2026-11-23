@@ -24,19 +24,20 @@ class AccountFormType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label' => 'Account Name',
+                'label' => 'account.form.name',
                 'constraints' => [
-                    new NotBlank(message: 'Please enter an account name.'),
+                    new NotBlank(message: 'account.name.not_blank'),
                     new Length(max: 100),
                 ],
-                'attr' => ['placeholder' => 'e.g. Main Checking'],
+                'attr' => ['placeholder' => 'account.form.name_placeholder'],
             ])
             ->add('type', EnumType::class, [
                 'class' => AccountType::class,
-                'label' => 'Account Type',
+                'label' => 'account.form.type',
             ])
             ->add('currency', ChoiceType::class, [
-                'label'   => 'Currency',
+                'label'   => 'account.form.currency',
+                'choice_translation_domain' => false,
                 'choices' => [
                     'EUR' => 'EUR',
                     'USD' => 'USD',
@@ -48,25 +49,25 @@ class AccountFormType extends AbstractType
                 ],
             ])
             ->add('initialBalance', TextType::class, [
-                'label'    => 'Initial Balance',
+                'label'    => 'account.form.initial_balance',
                 'required' => false,
                 'attr'     => ['placeholder' => '0.00'],
             ])
             ->add('iban', TextType::class, [
-                'label'    => 'IBAN',
+                'label'    => 'account.form.iban',
                 'required' => false,
-                'attr'     => ['placeholder' => 'Optional'],
+                'attr'     => ['placeholder' => 'common.optional'],
             ])
             ->add('includeInTotal', CheckboxType::class, [
-                'label'    => 'Include in total balance',
+                'label'    => 'account.form.include_in_total',
                 'required' => false,
             ])
             ->add('isDefault', CheckboxType::class, [
-                'label'    => 'Set as default account',
+                'label'    => 'account.form.is_default',
                 'required' => false,
             ])
             ->add('sortOrder', IntegerType::class, [
-                'label'    => 'Sort Order',
+                'label'    => 'common.sort_order',
                 'required' => false,
                 'data'     => 0,
             ]);

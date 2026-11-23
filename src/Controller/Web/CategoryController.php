@@ -62,14 +62,14 @@ class CategoryController extends AbstractController
             $em->persist($category);
             $em->flush();
 
-            $this->addFlash('success', 'Category created successfully.');
+            $this->addFlash('success', 'flash.category.created');
 
             return $this->redirectToRoute('category_list');
         }
 
         return $this->render('category/form.html.twig', [
             'form'  => $form,
-            'title' => 'New Category',
+            'title' => 'category.new',
         ]);
     }
 }

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-enum MeterType: string
+use Symfony\Contracts\Translation\TranslatableInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+enum MeterType: string implements TranslatableInterface
 {
     case Electricity = 'electricity';
     case Water       = 'water';
@@ -31,5 +34,10 @@ enum MeterType: string
             self::Electricity => '⚡',
             self::Water       => '💧',
         };
+    }
+
+    public function trans(TranslatorInterface $translator, ?string $locale = null): string
+    {
+        return $translator->trans('enum.meter_type.'.$this->value, [], 'messages', $locale);
     }
 }

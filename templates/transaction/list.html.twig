@@ -1,13 +1,13 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Transactions — Family Finance Manager{% endblock %}
+{% block title %}{{ 'transaction.title'|trans }} — {{ 'app.name'|trans }}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">Transactions</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ 'transaction.title'|trans }}</h1>
     <a href="{{ path('transaction_new') }}"
        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-        + Add Transaction
+        + {{ 'dashboard.add_transaction'|trans }}
     </a>
 </div>
 
@@ -15,34 +15,34 @@
 <div class="bg-white rounded-lg shadow p-4 mb-6">
     <form method="GET" action="{{ path('transaction_list') }}" class="flex flex-wrap gap-4 items-end">
         <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">Type</label>
+            <label class="block text-xs font-medium text-gray-500 mb-1">{{ 'transaction.filter.type'|trans }}</label>
             <select name="type" class="rounded border-gray-300 text-sm px-2 py-1.5 border">
-                <option value="">All types</option>
+                <option value="">{{ 'transaction.filter.all_types'|trans }}</option>
                 {% for type in transactionTypes %}
                     <option value="{{ type.value }}" {{ filters.type is defined and filters.type == type.value ? 'selected' : '' }}>
-                        {{ type.value|capitalize }}
+                        {{ type|trans }}
                     </option>
                 {% endfor %}
             </select>
         </div>
         <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
+            <label class="block text-xs font-medium text-gray-500 mb-1">{{ 'transaction.filter.from'|trans }}</label>
             <input type="date" name="from" value="{{ filters.from ?? '' }}"
                    class="rounded border-gray-300 text-sm px-2 py-1.5 border">
         </div>
         <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
+            <label class="block text-xs font-medium text-gray-500 mb-1">{{ 'transaction.filter.to'|trans }}</label>
             <input type="date" name="to" value="{{ filters.to ?? '' }}"
                    class="rounded border-gray-300 text-sm px-2 py-1.5 border">
         </div>
         <div class="flex gap-2">
             <button type="submit"
                     class="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">
-                Filter
+                {{ 'transaction.filter.submit'|trans }}
             </button>
             <a href="{{ path('transaction_list') }}"
                class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                Reset
+                {{ 'transaction.filter.reset'|trans }}
             </a>
         </div>
     </form>
@@ -52,21 +52,21 @@
 <div class="bg-white rounded-lg shadow overflow-hidden">
     {% if transactions.totalItemCount == 0 %}
         <div class="text-center py-12 text-gray-400">
-            No transactions found.
-            <a href="{{ path('transaction_new') }}" class="text-indigo-600 hover:underline ml-1">Add one</a>
+            {{ 'transaction.empty'|trans }}
+            <a href="{{ path('transaction_new') }}" class="text-indigo-600 hover:underline ml-1">{{ 'transaction.add_one'|trans }}</a>
         </div>
     {% else %}
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.date'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.type'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.description'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.category'|trans }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.account'|trans }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ 'transaction.column.amount'|trans }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ 'common.actions'|trans }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -87,7 +87,7 @@
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                                      bg-{{ typeColor[transaction.type.value] ?? 'gray' }}-100
                                      text-{{ typeColor[transaction.type.value] ?? 'gray' }}-800">
-                            {{ transaction.type.value|capitalize }}
+                            {{ transaction.type|trans }}
                         </span>
                     </td>
                     <td class="px-4 py-3 text-gray-900 max-w-xs truncate">
@@ -120,13 +120,13 @@
                     </td>
                     <td class="px-4 py-3 text-center whitespace-nowrap">
                         <a href="{{ path('transaction_edit', {id: transaction.id}) }}"
-                           class="text-indigo-600 hover:underline text-xs mr-2">Edit</a>
+                           class="text-indigo-600 hover:underline text-xs mr-2">{{ 'common.edit'|trans }}</a>
                         <form method="POST" action="{{ path('transaction_delete', {id: transaction.id}) }}"
                               class="inline"
-                              onsubmit="return confirm('Delete this transaction?')">
+                              onsubmit="return confirm({{ 'transaction.confirm_delete'|trans|json_encode }})">
                             <input type="hidden" name="_token"
                                    value="{{ csrf_token('delete_transaction_' ~ transaction.id) }}">
-                            <button type="submit" class="text-red-500 hover:underline text-xs">Delete</button>
+                            <button type="submit" class="text-red-500 hover:underline text-xs">{{ 'common.delete'|trans }}</button>
                         </form>
                     </td>
                 </tr>
@@ -138,14 +138,16 @@
     {# Pagination #}
     <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
         <div class="text-sm text-gray-500">
-            Showing {{ transactions.currentPageNumber * transactions.itemNumberPerPage - transactions.itemNumberPerPage + 1 }}
-            –{{ min(transactions.currentPageNumber * transactions.itemNumberPerPage, transactions.totalItemCount) }}
-            of {{ transactions.totalItemCount }} transactions
+            {{ 'transaction.pagination'|trans({
+                '%from%': transactions.currentPageNumber * transactions.itemNumberPerPage - transactions.itemNumberPerPage + 1,
+                '%to%': min(transactions.currentPageNumber * transactions.itemNumberPerPage, transactions.totalItemCount),
+                '%total%': transactions.totalItemCount,
+            }) }}
         </div>
         <div class="flex gap-1">
             {% if transactions.currentPageNumber > 1 %}
                 <a href="{{ path('transaction_list', filters|merge({'page': transactions.currentPageNumber - 1})) }}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">&laquo; Prev</a>
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">&laquo; {{ 'common.previous'|trans }}</a>
             {% endif %}
 
             {% for page in 1..transactions.pageCount %}
@@ -161,7 +163,7 @@
 
             {% if transactions.currentPageNumber < transactions.pageCount %}
                 <a href="{{ path('transaction_list', filters|merge({'page': transactions.currentPageNumber + 1})) }}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next &raquo;</a>
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">{{ 'common.next'|trans }} &raquo;</a>
             {% endif %}
         </div>
     </div>

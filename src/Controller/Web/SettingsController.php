@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[IsGranted('ROLE_USER')]
 #[Route('/settings')]
@@ -43,7 +44,7 @@ class SettingsController extends AbstractController
                 $currentPassword = $profileForm->get('currentPassword')->getData() ?? '';
 
                 if (!$this->passwordHasher->isPasswordValid($user, $currentPassword)) {
-                    $this->addFlash('error', 'Current password is incorrect.');
+                    $this->addFlash('error', 'flash.settings.wrong_password');
 
                     return $this->redirectToRoute('settings');
                 }
@@ -52,7 +53,7 @@ class SettingsController extends AbstractController
             }
 
             $this->em->flush();
-            $this->addFlash('success', 'Profile updated.');
+            $this->addFlash('success', 'flash.settings.profile_updated');
 
             return $this->redirectToRoute('settings');
         }
@@ -66,7 +67,7 @@ class SettingsController extends AbstractController
 
             if ($familyForm->isSubmitted() && $familyForm->isValid()) {
                 $this->em->flush();
-                $this->addFlash('success', 'Family settings updated.');
+                $this->addFlash('success', 'flash.settings.family_updated');
 
                 return $this->redirectToRoute('settings');
             }
@@ -88,7 +89,7 @@ class SettingsController extends AbstractController
         $family      = $currentUser->getFamily();
 
         if ($family === null) {
-            $this->addFlash('error', 'You must belong to a family to add members.');
+            $this->addFlash('error', 'flash.settings.no_family');
 
             return $this->redirectToRoute('settings');
         }
@@ -101,7 +102,7 @@ class SettingsController extends AbstractController
 
             $existingUser = $this->em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
             if ($existingUser !== null) {
-                $this->addFlash('error', 'A user with this email already exists.');
+                $this->addFlash('error', 'flash.settings.email_taken');
 
                 return $this->redirectToRoute('settings_users_new');
             }
@@ -119,7 +120,7 @@ class SettingsController extends AbstractController
             $this->em->persist($newUser);
             $this->em->flush();
 
-            $this->addFlash('success', sprintf('User "%s" created successfully.', $newUser->getName()));
+            $this->addFlash('success', new TranslatableMessage('flash.settings.user_created', ['%name%' => $newUser->getName()]));
 
             return $this->redirectToRoute('settings');
         }

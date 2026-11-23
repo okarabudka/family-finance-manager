@@ -21,16 +21,19 @@ class BudgetCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setDefaultSort(['year' => 'DESC', 'month' => 'DESC']);
+        return $crud
+            ->setEntityLabelInSingular('admin.entity.budget.singular')
+            ->setEntityLabelInPlural('admin.entity.budget.plural')
+            ->setDefaultSort(['year' => 'DESC', 'month' => 'DESC']);
     }
 
     public function configureFields(string $pageName): iterable
     {
-        yield IdField::new('id')->hideOnForm();
-        yield AssociationField::new('family');
-        yield AssociationField::new('category');
-        yield IntegerField::new('year');
-        yield IntegerField::new('month');
-        yield MoneyField::new('plannedAmount')->setCurrency('EUR');
+        yield IdField::new('id', 'admin.field.id')->hideOnForm();
+        yield AssociationField::new('family', 'admin.field.family');
+        yield AssociationField::new('category', 'admin.field.category');
+        yield IntegerField::new('year', 'admin.field.year');
+        yield IntegerField::new('month', 'admin.field.month');
+        yield MoneyField::new('plannedAmount', 'admin.field.planned_amount')->setCurrency('EUR');
     }
 }

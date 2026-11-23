@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="{{ app.request.locale }}" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Family Finance Manager{% endblock %}</title>
+    <title>{% block title %}{{ 'app.name'|trans }}{% endblock %}</title>
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     {% block stylesheets %}{% endblock %}
     {% block importmap %}{{ importmap('app') }}{% endblock %}
@@ -18,49 +18,50 @@
             <div class="flex h-16 items-center justify-between">
                 <div class="flex items-center gap-8">
                     <a href="{{ path('dashboard') }}" class="text-white font-bold text-lg">
-                        Family Finance
+                        {{ 'app.short_name'|trans }}
                     </a>
                     <div class="hidden md:flex gap-1">
                         {% set route = app.request.attributes.get('_route') ?? '' %}
                         <a href="{{ path('dashboard') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'dashboard' ? 'bg-indigo-700 text-white' : '' }}">
-                            Dashboard
+                            {{ 'nav.dashboard'|trans }}
                         </a>
                         <a href="{{ path('transaction_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'transaction' ? 'bg-indigo-700 text-white' : '' }}">
-                            Transactions
+                            {{ 'nav.transactions'|trans }}
                         </a>
                         <a href="{{ path('account_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'account' ? 'bg-indigo-700 text-white' : '' }}">
-                            Accounts
+                            {{ 'nav.accounts'|trans }}
                         </a>
                         <a href="{{ path('category_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'category' ? 'bg-indigo-700 text-white' : '' }}">
-                            Categories
+                            {{ 'nav.categories'|trans }}
                         </a>
                         <a href="{{ path('budget_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'budget' ? 'bg-indigo-700 text-white' : '' }}">
-                            Budgets
+                            {{ 'nav.budgets'|trans }}
                         </a>
                         <a href="{{ path('savings_goal_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'savings_goal' ? 'bg-indigo-700 text-white' : '' }}">
-                            Savings
+                            {{ 'nav.savings'|trans }}
                         </a>
                         <a href="{{ path('meter_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'meter' ? 'bg-indigo-700 text-white' : '' }}">
-                            Meters
+                            {{ 'nav.meters'|trans }}
                         </a>
                         <a href="{{ path('import_list') }}"
                            class="text-indigo-100 hover:text-white px-3 py-2 rounded text-sm font-medium {{ route starts with 'import' ? 'bg-indigo-700 text-white' : '' }}">
-                            Imports
+                            {{ 'nav.imports'|trans }}
                         </a>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    {% include '_locale_switcher.html.twig' %}
                     {% if is_granted('ROLE_ADMIN') %}
                     <a href="{{ path('admin') }}"
                        class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700">
-                        Admin
+                        {{ 'nav.admin'|trans }}
                     </a>
                     {% endif %}
                     <a href="{{ path('settings') }}"
@@ -70,7 +71,7 @@
                     </a>
                     <a href="{{ path('app_logout') }}"
                        class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700">
-                        Logout
+                        {{ 'nav.logout'|trans }}
                     </a>
                 </div>
             </div>
@@ -84,7 +85,7 @@
         {% set color = flashTypes[type] ?? 'gray' %}
         {% for message in messages %}
         <div class="bg-{{ color }}-50 border border-{{ color }}-200 text-{{ color }}-800 px-4 py-3 mx-auto max-w-7xl mt-4 rounded relative" role="alert">
-            <span class="block sm:inline">{{ message }}</span>
+            <span class="block sm:inline">{{ message|trans }}</span>
         </div>
         {% endfor %}
     {% endfor %}

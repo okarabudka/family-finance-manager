@@ -60,14 +60,14 @@ class SavingsGoalController extends AbstractController
             $em->persist($goal);
             $em->flush();
 
-            $this->addFlash('success', 'Savings goal created successfully.');
+            $this->addFlash('success', 'flash.savings_goal.created');
 
             return $this->redirectToRoute('savings_goal_list');
         }
 
         return $this->render('savings_goal/form.html.twig', [
             'form'  => $form,
-            'title' => 'New Savings Goal',
+            'title' => 'savings_goal.new',
         ]);
     }
 
@@ -91,14 +91,14 @@ class SavingsGoalController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
 
-            $this->addFlash('success', 'Savings goal updated successfully.');
+            $this->addFlash('success', 'flash.savings_goal.updated');
 
             return $this->redirectToRoute('savings_goal_list');
         }
 
         return $this->render('savings_goal/form.html.twig', [
             'form'  => $form,
-            'title' => 'Edit Savings Goal',
+            'title' => 'savings_goal.edit',
             'goal'  => $goal,
         ]);
     }
@@ -120,9 +120,9 @@ class SavingsGoalController extends AbstractController
         if ($this->isCsrfTokenValid('delete_savings_goal_' . $goal->getId(), $request->request->get('_token'))) {
             $em->remove($goal);
             $em->flush();
-            $this->addFlash('success', 'Savings goal deleted.');
+            $this->addFlash('success', 'flash.savings_goal.deleted');
         } else {
-            $this->addFlash('error', 'Invalid CSRF token.');
+            $this->addFlash('error', 'flash.invalid_csrf');
         }
 
         return $this->redirectToRoute('savings_goal_list');

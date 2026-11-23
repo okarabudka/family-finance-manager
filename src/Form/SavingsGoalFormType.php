@@ -28,33 +28,33 @@ class SavingsGoalFormType extends AbstractType
 
         $builder
             ->add('name', TextType::class, [
-                'label' => 'Goal Name',
-                'attr'  => ['placeholder' => 'e.g. Emergency Fund'],
+                'label' => 'savings_goal.form.name',
+                'attr'  => ['placeholder' => 'savings_goal.form.name_placeholder'],
             ])
             ->add('description', TextareaType::class, [
-                'label'    => 'Description',
+                'label'    => 'savings_goal.form.description',
                 'required' => false,
                 'attr'     => ['rows' => 3],
             ])
             ->add('account', EntityType::class, [
                 'class'         => Account::class,
                 'query_builder' => fn ($repo) => $repo->createFamilyQueryBuilder($family),
-                'label'         => 'Account',
+                'label'         => 'savings_goal.form.account',
                 'choice_label'  => 'name',
             ])
             ->add('targetAmount', MoneyType::class, [
                 'currency' => $family->getCurrency(),
-                'label'    => 'Target Amount',
+                'label'    => 'savings_goal.form.target_amount',
                 'required' => false,
             ])
             ->add('targetDate', DateType::class, [
-                'label'    => 'Deadline',
+                'label'    => 'savings_goal.form.target_date',
                 'widget'   => 'single_text',
                 'required' => false,
             ])
             ->add('status', EnumType::class, [
                 'class' => SavingsGoalStatus::class,
-                'label' => 'Status',
+                'label' => 'savings_goal.form.status',
             ]);
     }
 

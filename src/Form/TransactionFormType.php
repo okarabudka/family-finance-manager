@@ -28,35 +28,35 @@ class TransactionFormType extends AbstractType
         $builder
             ->add('type', EnumType::class, [
                 'class' => TransactionType::class,
-                'label' => 'Тип',
+                'label' => 'transaction.form.type',
             ])
             ->add('amount', MoneyType::class, [
                 'currency' => $family->getCurrency(),
-                'label' => 'Сумма',
+                'label' => 'transaction.form.amount',
             ])
             ->add('description', TextareaType::class, [
-                'label' => 'Описание',
+                'label' => 'transaction.form.description',
                 'required' => false,
             ])
             ->add('category', EntityType::class, [
                 'class' => Category::class,
                 'query_builder' => fn($repo) => $repo->createFamilyQueryBuilder($family),
-                'label' => 'Категория',
+                'label' => 'transaction.form.category',
                 'required' => false,
             ])
             ->add('account', EntityType::class, [
                 'class' => Account::class,
                 'query_builder' => fn($repo) => $repo->createFamilyQueryBuilder($family),
-                'label' => 'Счёт',
+                'label' => 'transaction.form.account',
             ])
             ->add('targetAccount', EntityType::class, [
                 'class' => Account::class,
                 'query_builder' => fn($repo) => $repo->createFamilyQueryBuilder($family),
-                'label' => 'Счёт получателя',
+                'label' => 'transaction.form.target_account',
                 'required' => false,
             ])
             ->add('executedAt', DateType::class, [
-                'label' => 'Дата',
+                'label' => 'transaction.form.date',
                 'data' => new \DateTime(),
             ]);
     }

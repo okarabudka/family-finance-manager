@@ -28,36 +28,36 @@ class CategoryFormType extends AbstractType
 
         $builder
             ->add('name', TextType::class, [
-                'label' => 'Category Name',
+                'label' => 'category.form.name',
                 'constraints' => [
-                    new NotBlank(message: 'Please enter a category name.'),
+                    new NotBlank(message: 'category.name.not_blank'),
                     new Length(max: 100),
                 ],
-                'attr' => ['placeholder' => 'e.g. Groceries'],
+                'attr' => ['placeholder' => 'category.form.name_placeholder'],
             ])
             ->add('type', EnumType::class, [
                 'class' => CategoryType::class,
-                'label' => 'Category Type',
+                'label' => 'category.form.type',
             ])
             ->add('icon', TextType::class, [
-                'label'    => 'Icon (emoji)',
+                'label'    => 'category.form.icon',
                 'required' => false,
-                'attr'     => ['placeholder' => 'e.g. 🛒', 'maxlength' => 10],
+                'attr'     => ['placeholder' => 'category.form.icon_placeholder', 'maxlength' => 10],
             ])
             ->add('color', ColorType::class, [
-                'label'    => 'Color',
+                'label'    => 'category.form.color',
                 'required' => false,
             ])
             ->add('parent', EntityType::class, [
                 'class'         => Category::class,
                 'query_builder' => fn ($repo) => $repo->createFamilyQueryBuilder($family),
-                'label'         => 'Parent Category',
+                'label'         => 'category.form.parent',
                 'required'      => false,
-                'placeholder'   => '— none —',
+                'placeholder'   => 'common.none',
                 'choice_label'  => 'name',
             ])
             ->add('sortOrder', IntegerType::class, [
-                'label'    => 'Sort Order',
+                'label'    => 'common.sort_order',
                 'required' => false,
                 'data'     => 0,
             ]);
