@@ -17,7 +17,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-16 items-center justify-between">
                 <div class="flex items-center gap-8">
-                    <a href="{{ path('dashboard') }}" class="text-white font-bold text-lg">
+                    <a href="{{ path('dashboard') }}" class="text-white font-bold text-lg whitespace-nowrap">
                         {{ 'app.short_name'|trans }}
                     </a>
                     <div class="hidden md:flex gap-1">
@@ -65,7 +65,7 @@
                     </a>
                     {% endif %}
                     <a href="{{ path('settings') }}"
-                       class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700
+                       class="text-indigo-100 hover:text-white text-sm px-3 py-2 rounded hover:bg-indigo-700 whitespace-nowrap
                               {{ app.request.attributes.get('_route') starts with 'settings' ? 'bg-indigo-700 text-white' : '' }}">
                         {{ app.user.name }}
                     </a>

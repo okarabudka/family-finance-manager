@@ -164,6 +164,9 @@ final class AppFixtures extends Fixture
             $this->persistTransaction($manager, $family, $members[0], TransactionType::Expense, '17.99', 'Netflix', $day(15), 'Entertainment', source: $card);
             $this->persistTransaction($manager, $family, $members[1], TransactionType::Transfer, '200.00', 'Cash withdrawal', $day(15), null, source: $checking, target: $cash);
         }
+        if ($lastDay >= 20) {
+            $this->persistTransaction($manager, $family, $members[0], TransactionType::Transfer, '180.00', 'Credit card statement', $day(20), null, source: $checking, target: $card);
+        }
         if ($lastDay >= 25 && 0 === mt_rand(0, 2)) {
             $this->persistTransaction($manager, $family, $members[1], TransactionType::Income, $this->amount(40, 180), 'Marketplace sale', $day(25), 'Other income', target: $checking);
         }

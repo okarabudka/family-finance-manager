@@ -61,24 +61,24 @@
         {% if categoryLabels is empty %}
             <p class="text-gray-400 text-sm text-center py-8">{{ 'dashboard.no_expense_data'|trans }}</p>
         {% else %}
-            <canvas id="categoryChart" height="250" data-chart="{{ {
+            <div class="relative h-72"><canvas id="categoryChart" data-chart="{{ {
                 type: 'doughnut',
                 data: {labels: categoryLabels, datasets: [{data: categoryAmounts, backgroundColor: categoryColors, borderWidth: 2, borderColor: '#fff'}]},
-                options: {responsive: true, plugins: {legend: {position: 'bottom'}}},
-            }|json_encode }}"></canvas>
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}},
+            }|json_encode }}"></canvas></div>
         {% endif %}
     </div>
 
     <div class="bg-white rounded-lg shadow p-4">
         <h3 class="text-base font-semibold text-gray-900 mb-4">{{ 'dashboard.trend'|trans }}</h3>
-        <canvas id="trendChart" height="250" data-chart="{{ {
+        <div class="relative h-72"><canvas id="trendChart" data-chart="{{ {
             type: 'bar',
             data: {labels: trendLabels, datasets: [
                 {label: 'dashboard.chart.expenses'|trans, data: trendExpenses, backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: 'rgb(239, 68, 68)', borderWidth: 1},
                 {label: 'dashboard.chart.income'|trans, data: trendIncome, backgroundColor: 'rgba(34, 197, 94, 0.6)', borderColor: 'rgb(34, 197, 94)', borderWidth: 1},
             ]},
-            options: {responsive: true, scales: {y: {beginAtZero: true}}, plugins: {legend: {position: 'bottom'}}},
-        }|json_encode }}"></canvas>
+            options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true}}, plugins: {legend: {position: 'bottom'}}},
+        }|json_encode }}"></canvas></div>
     </div>
 </div>
 
